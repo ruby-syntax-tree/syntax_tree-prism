@@ -1,0 +1,15 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    prettier_print (1.2.1)
+    yarp (0.12.0)
+
+PLATFORMS
+  arm64-darwin-22
+
+DEPENDENCIES
+  prettier_print
+  yarp
+
+BUNDLED WITH
+   2.4.13

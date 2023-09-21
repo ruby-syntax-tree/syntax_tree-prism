@@ -1,0 +1,229 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+
+$:.unshift(File.expand_path("../lib", __dir__))
+require "syntax_tree/yarp"
+
+END {
+  failures = DATA.readlines(chomp: true)
+  delimiter = /%(?: # (.+?))?\n/
+
+  Dir[File.expand_path("../fixtures/*.rb", __dir__)].each do |filepath|
+    File
+      .readlines(filepath)
+      .slice_before(delimiter)
+      .each_with_index do |source, index|
+        source, formatted = source.tap(&:shift).join.split("-\n")
+        formatted ||= source
+
+        actual = YARP.parse(source).format
+        name = "#{File.basename(filepath)}:#{index}"
+
+        if actual != formatted
+          if failures.include?(name)
+            failures.delete(name)
+          else
+            failures << name
+          end
+        end
+      end
+  end
+
+  puts failures
+
+  YARP::TESTS.each do |clazz, cases|
+    cases.each do |(output, input, block)|
+      output = output.gsub("{{long}}", "a" * 80)
+      result = YARP.parse(input.gsub("{{long}}", "a" * 80))
+
+      node = result.value.statements.body.last
+      node = block.call(node) if block
+      raise "expected `#{clazz}`, got `#{node.class}`" if !node.is_a?(clazz)
+
+      actual = result.format.chomp
+      raise "expected:\n#{output}\n\ngot:\n#{actual}\n" if actual != output
+    end
+  end
+}
+
+__END__
+aref_field.rb:4
+array_literal.rb:5
+array_literal.rb:7
+array_literal.rb:8
+array_literal.rb:10
+array_literal.rb:17
+array_literal.rb:19
+assign.rb:5
+assign.rb:6
+assoc.rb:1
+assoc.rb:7
+assoc.rb:8
+bare_assoc_hash.rb:1
+bare_assoc_hash.rb:2
+bare_assoc_hash.rb:3
+bare_assoc_hash.rb:4
+bodystmt.rb:6
+brace_block.rb:0
+brace_block.rb:1
+break.rb:8
+call.rb:7
+call.rb:8
+call.rb:9
+call.rb:10
+call.rb:11
+call.rb:14
+call.rb:15
+call.rb:16
+command.rb:1
+command.rb:8
+command.rb:9
+command_call.rb:1
+command_call.rb:5
+command_call.rb:6
+command_call.rb:7
+command_call.rb:9
+command_call.rb:10
+command_call.rb:11
+def.rb:2
+def.rb:5
+def.rb:6
+def_endless.rb:9
+defined.rb:2
+defs.rb:2
+defs.rb:5
+do_block.rb:0
+do_block.rb:1
+do_block.rb:2
+do_block.rb:3
+do_block.rb:4
+dyna_symbol.rb:0
+dyna_symbol.rb:4
+dyna_symbol.rb:5
+else.rb:1
+else.rb:3
+else.rb:4
+elsif.rb:0
+elsif.rb:1
+elsif.rb:2
+elsif.rb:3
+embdoc.rb:0
+embdoc.rb:1
+end_content.rb:0
+excessed_comma.rb:0
+field.rb:0
+for.rb:2
+for.rb:5
+for.rb:7
+for.rb:8
+hash.rb:2
+hash.rb:3
+hash.rb:4
+hash.rb:5
+hash.rb:8
+heredoc.rb:17
+hshptn.rb:0
+hshptn.rb:1
+hshptn.rb:2
+hshptn.rb:5
+hshptn.rb:6
+hshptn.rb:14
+hshptn.rb:15
+if.rb:1
+if.rb:3
+if.rb:4
+if.rb:5
+if.rb:6
+if.rb:7
+if.rb:8
+if.rb:9
+if.rb:10
+if.rb:12
+if.rb:13
+if_mod.rb:3
+ifop.rb:1
+ifop.rb:3
+in.rb:1
+in.rb:2
+in.rb:4
+label.rb:1
+lambda.rb:2
+lambda.rb:3
+lambda.rb:4
+lambda.rb:6
+lambda.rb:7
+lambda.rb:8
+lambda.rb:9
+lambda.rb:10
+lambda.rb:11
+lambda.rb:12
+lambda.rb:13
+lambda.rb:14
+lambda.rb:15
+lambda.rb:16
+lambda.rb:17
+lambda.rb:18
+lambda.rb:19
+massign.rb:1
+method_add_block.rb:0
+mlhs.rb:1
+mlhs_paren.rb:0
+mlhs_paren.rb:3
+mlhs_paren.rb:4
+next.rb:15
+next.rb:16
+next.rb:17
+next.rb:18
+not.rb:1
+not.rb:2
+not.rb:3
+not.rb:4
+not.rb:5
+not.rb:6
+params.rb:23
+params.rb:34
+regexp_literal.rb:1
+regexp_literal.rb:2
+regexp_literal.rb:3
+regexp_literal.rb:4
+regexp_literal.rb:12
+regexp_literal.rb:17
+regexp_literal.rb:18
+rescue.rb:0
+rescue_mod.rb:0
+return.rb:8
+return.rb:9
+statements.rb:0
+statements.rb:1
+string_concat.rb:0
+string_embexpr.rb:5
+string_literal.rb:15
+string_literal.rb:16
+unary.rb:0
+unary.rb:1
+unless.rb:3
+unless.rb:4
+unless.rb:5
+unless.rb:6
+unless.rb:7
+unless.rb:8
+unless_mod.rb:1
+unless_mod.rb:3
+until.rb:3
+until.rb:4
+until.rb:5
+until.rb:6
+until_mod.rb:3
+when.rb:7
+when.rb:8
+while.rb:3
+while.rb:4
+while.rb:5
+while.rb:6
+while_mod.rb:3
+yield.rb:1
+yield.rb:3
+yield.rb:5
+yield.rb:6
