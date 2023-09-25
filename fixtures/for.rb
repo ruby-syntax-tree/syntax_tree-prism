@@ -38,6 +38,10 @@ end
 for foo, in [[foo, bar]]
   foo
 end
+-
+for foo, * in [[foo, bar]]
+  foo
+end
 %
 for foo in bar # comment1
   # comment2

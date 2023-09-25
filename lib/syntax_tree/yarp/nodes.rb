@@ -111,41 +111,65 @@ module YARP
     #     ^^^^^^^^^
     def format(q)
       opening_loc = self.opening_loc
+
+      unless opening_loc
+        q.group { q.seplist(elements) { |element| q.format(element) } }
+        return
+      end
+
+      opening = opening_loc.slice
+
+      if opening.start_with?("%")
+        q.group do
+          q.text(opening)
+          q.indent do
+            q.breakable_empty
+            q.seplist(elements, ->(q) { q.breakable_space }) { |element| q.format(element) }
+          end
+          q.breakable_empty
+          q.text(closing)
+        end
+        return
+      end
+
       closing_loc = self.closing_loc
       elements = self.elements
 
-      if !opening_loc
-        q.group { q.seplist(elements) { |element| q.format(element) } }
-      else
-        case (opening = opening_loc.slice)[0...2].to_sym
-        when :"%w", :"%W", :"%i", :"%I"
+      if opening_loc.comments.empty? && closing_loc.comments.empty? && elements.length >= 2
+        if elements.all? { |element| element.is_a?(StringNode) && element.location.comments.empty? && !element.content.match?(/[\s\[\]\\]/) }
           q.group do
-            q.text(opening)
+            q.text("%w[")
             q.indent do
               q.breakable_empty
-              q.seplist(elements, ->(q) { q.breakable_space }) { |element| q.format(element) }
-            end
-            q.breakable_empty
-            q.text(closing)
-          end
-        else
-          q.group do
-            q.loc(opening_loc)
-
-            if elements.any? || closing_loc.comments.any?
-              q.indent do
-                q.breakable_empty
-                q.seplist(elements) { |element| q.format(element) }
-                q.seplist(closing_loc.comments, ->(q) { q.breakable_force }) do |comment|
-                  q.text(comment.slice)
-                end
+              q.seplist(elements, ->(q) { q.breakable_space }) do |element|
+                q.text(element.content)
               end
             end
-
             q.breakable_empty
             q.text("]")
           end
+          return
+        elsif elements.all? { |element| element.is_a?(SymbolNode) && element.location.comments.empty? }
+          q.group do
+            q.text("%i[")
+            q.indent do
+              q.breakable_empty
+              q.seplist(elements, ->(q) { q.breakable_space }) do |element|
+                q.text(element.value)
+              end
+            end
+            q.breakable_empty
+            q.text("]")
+          end
+          return
         end
+      end
+
+      q.group do
+        q.loc(opening_loc)
+        q.format_body_list_empty(elements, closing_loc.comments)
+        q.breakable_empty
+        q.text("]")
       end
     end
 
@@ -222,7 +246,7 @@ module YARP
       else
         q.format(key)
 
-        if value
+        if value && !value.is_a?(ImplicitNode)
           q.text(" ")
           q.format(value)
         end
@@ -482,115 +506,151 @@ module YARP
     #       foo&.bar
     #       ^^^^^^^^
     def format(q)
+      message = self.message
+      name = self.name
       arguments = self.arguments
 
-      case name.to_sym
-      when :!
-      when :+@, :-@, :~
-        if !arguments && !block
-          q.format_prefix(message_loc, receiver)
-          return
-        end
-      when :+, :-, :*, :/, :==, :>, :<, :>=, :<=, :<=>, :<<, :>>
-        if arguments&.arguments.length == 1 && !block
-          q.format_binary(receiver, message_loc, arguments)
-          return
-        end
-      when :**
-        if arguments&.arguments.length == 1 && !block
-          q.group do
-            q.format(receiver)
-            q.text("**")
-            q.indent do
-              q.breakable_empty
-              q.format(arguments)
-            end
-          end
-
-          return
-        end
-      when :[]
-        q.group do
-          q.format(receiver)
-          q.text("[")
-
-          if arguments
-            q.indent do
-              q.breakable_empty
-              q.format(arguments)
-            end
-
-            q.breakable_empty
-          end
-
-          q.text("]")
-
-          if block
-            q.text(" ")
-            q.format(block)
-          end
-        end
-
-        return
-      when :[]=
-        if arguments
-          q.group do
-            *before, after = arguments.arguments
-
-            q.group do
-              q.format(receiver)
-              q.text("[")
-
-              if before.any?
+      unless safe_navigation?
+        case name.to_sym
+        when :!
+          if message == "not"
+            if receiver
+              q.group do
+                q.text("not")
+                q.if_break { q.text("(") }.if_flat { q.text(" ") }
                 q.indent do
                   q.breakable_empty
-                  q.seplist(before) { |argument| q.format(argument) }
+                  q.format(receiver)
                 end
                 q.breakable_empty
+                q.if_break { q.text(")") }
               end
-
-              q.text("]")
+            else
+              q.text("not()")
             end
 
-            q.text(" ")
-            q.group do
-              q.text("=")
-              q.indent do
-                q.breakable_space
-                q.format(after)
-              end
-            end
-
-            if block
-              q.text(" ")
-              q.format(block)
-            end
+            return
           end
-        else
+
+          if !arguments && !block
+            q.format_prefix(message_loc, receiver)
+            return
+          end
+        when :+@, :-@, :~
+          if !arguments && !block
+            q.format_prefix(message_loc, receiver)
+            return
+          end
+        when :+, :-, :*, :/, :==, :>, :<, :>=, :<=, :<=>, :<<, :>>
+          if arguments&.arguments.length == 1 && !block
+            q.format_binary(receiver, message_loc, arguments)
+            return
+          end
+        when :**
+          if arguments&.arguments.length == 1 && !block
+            q.group do
+              q.format(receiver)
+              q.text("**")
+              q.indent do
+                q.breakable_empty
+                q.format(arguments)
+              end
+            end
+
+            return
+          end
+        when :[]
           q.group do
             q.format(receiver)
-            q.text("[]")
+            q.text("[")
+
+            if arguments
+              q.indent do
+                q.breakable_empty
+                q.format(arguments)
+              end
+
+              q.breakable_empty
+            end
+
+            q.text("]")
 
             if block
               q.text(" ")
               q.format(block)
             end
           end
-        end
 
-        return
-      when :call
+          return
+        when :[]=
+          if arguments
+            q.group do
+              *before, after = arguments.arguments
+
+              q.group do
+                q.format(receiver)
+                q.text("[")
+
+                if before.any?
+                  q.indent do
+                    q.breakable_empty
+                    q.seplist(before) { |argument| q.format(argument) }
+                  end
+                  q.breakable_empty
+                end
+
+                q.text("]")
+              end
+
+              q.text(" ")
+              q.group do
+                q.text("=")
+                q.indent do
+                  q.breakable_space
+                  q.format(after)
+                end
+              end
+
+              if block
+                q.text(" ")
+                q.format(block)
+              end
+            end
+          else
+            q.group do
+              q.format(receiver)
+              q.text("[]")
+
+              if block
+                q.text(" ")
+                q.format(block)
+              end
+            end
+          end
+
+          return
+        when :call
+        end
       end
 
       q.group do
-        if receiver
-          q.format(receiver)
-          q.text(call_operator == "&." ? "&." : ".")
-        end
+        doc =
+          q.nest(0) do
+            if receiver
+              q.format(receiver)
+              q.text(call_operator == "&." ? "&." : ".")
+            end
 
-        q.text(message)
+            q.text(message)
+          end
 
-        if opening_loc && arguments && closing_loc
+        if arguments && arguments.arguments.length == 1 && name.end_with?("=") && !block
+          q.text(" =")
+          q.indent do
+            q.breakable_space
+            q.format(arguments)
+          end
+        elsif opening_loc && arguments && closing_loc
           q.text("(")
           q.indent do
             q.breakable_empty
@@ -600,7 +660,7 @@ module YARP
           q.text(")")
         elsif arguments
           q.text(" ")
-          q.format(arguments)
+          align(q, self, q.last_position(doc))
         elsif opening_loc && closing_loc
           q.text("()")
         end
@@ -609,6 +669,23 @@ module YARP
           q.text(" ")
           q.format(block)
         end
+      end
+    end
+
+    private
+
+    def align(q, node, last)
+      if node.arguments && node.arguments.arguments.length == 1
+        argument = node.arguments.arguments.first
+
+        if argument.is_a?(DefNode)
+          q.format(arguments)
+        elsif argument.is_a?(CallNode) && !argument.opening_loc
+          align(q, argument, last)
+        end
+      else
+        width = last + 1
+        q.nest(width > (q.maxwidth / 2) ? 0 : width) { q.format(arguments) }
       end
     end
   end
@@ -706,6 +783,13 @@ module YARP
         if consequent
           q.breakable_force
           q.format(consequent)
+        end
+
+        q.indent do
+          end_keyword_loc.comments.each do |comment|
+            q.breakable_force
+            q.text(comment.slice)
+          end
         end
 
         q.breakable_force
@@ -1208,14 +1292,7 @@ module YARP
         q.group { q.format(index) }
         q.text(" in ")
         q.group { q.format(collection) }
-
-        if statements
-          q.indent do
-            q.breakable_force
-            q.format(statements)
-          end
-        end
-
+        q.format_body(statements, end_keyword_loc.comments)
         q.breakable_force
         q.text("end")
       end
@@ -1336,11 +1413,117 @@ module YARP
     def format(q)
       elements = self.elements
 
+      if elements.any? { |element| element.value.is_a?(ImplicitNode) }
+        format_identity(q)
+      elsif elements.all? { |element| !element.is_a?(AssocNode) || element.operator_loc.nil? || element.key.is_a?(InterpolatedSymbolNode) || (element.key.is_a?(SymbolNode) && (value = element.key.value) && value.match?(/^[_A-Za-z]/) && !value.end_with?("=")) }
+        format_labels(q)
+      else
+        format_rockets(q)
+      end
+    end
+
+    private
+
+    def format_layout(q)
+      elements = self.elements
+
       q.group do
         q.loc(opening_loc)
-        q.format_body_list_space(elements, closing_loc.comments)
+        q.indent do
+          if elements.any?
+            q.breakable_space
+            q.seplist(elements) do |element|
+              if element.is_a?(AssocNode)
+                yield element
+              else
+                q.format(element)
+              end
+            end
+          end
+
+          closing_loc.comments.each do |comment|
+            q.breakable_force
+            q.text(comment.slice)
+          end
+        end
+
         elements.any? ? q.breakable_space : q.breakable_empty
         q.text("}")
+      end
+    end
+
+    def format_identity(q)
+      format_layout(q) { |element| q.format(element) }
+    end
+
+    def format_labels(q)
+      format_layout(q) do |element|
+        if element.operator_loc.nil?
+          q.format(element)
+        else
+          key = element.key
+
+          if key.is_a?(InterpolatedSymbolNode)
+            opening = key.opening
+
+            if opening.start_with?("%")
+              q.text("\"")
+              key.parts.each { |part| q.format(part) }
+              q.text("\":")
+            else
+              q.group do
+                q.text(key.opening[1..])
+                key.parts.each { |part| q.format(part) }
+                q.text(key.closing)
+                q.text(":")
+              end
+            end
+          elsif key.is_a?(SymbolNode)
+            q.text(key.value)
+            q.text(":")
+          else
+            raise "Unexpected key: #{key.inspect}"
+          end
+
+          q.indent do
+            q.breakable_space
+            q.format(element.value)
+          end
+        end
+      end
+    end
+
+    def format_rockets(q)
+      format_layout(q) do |element|
+        key = element.key
+
+        if key.is_a?(InterpolatedSymbolNode)
+          opening = key.opening
+
+          if opening.start_with?("%")
+            q.format(key)
+          else
+            q.group do
+              q.text(opening)
+              key.parts.each { |part| q.format(part) }
+              q.text(key.closing)
+            end
+          end
+        elsif key.is_a?(SymbolNode)
+          q.text(":")
+          q.text(key.value)
+        else
+          q.format(key)
+        end
+
+        q.text(" ")
+        operator_loc = element.operator_loc
+        operator_loc ? q.loc(operator_loc) : q.text("=>")
+
+        q.indent do
+          q.breakable_space
+          q.format(element.value)
+        end
       end
     end
   end
@@ -1472,11 +1655,13 @@ module YARP
     def format(q)
       q.group do
         q.text("in ")
-        q.format(pattern)
+        q.nest(3) { q.format(pattern) }
 
         if statements
-          q.breakable_force
-          q.format(statements)
+          q.indent do
+            q.breakable_force
+            q.format(statements)
+          end
         end
       end
     end
@@ -1632,7 +1817,104 @@ module YARP
     #     foo(a: b)
     #         ^^^^
     def format(q)
-      q.seplist(elements) { |element| q.format(element) }
+      elements = self.elements
+
+      if elements.any? { |element| element.value.is_a?(ImplicitNode) }
+        format_identity(q)
+      elsif elements.all? { |element| !element.is_a?(AssocNode) || element.operator_loc.nil? || element.key.is_a?(InterpolatedSymbolNode) || (element.key.is_a?(SymbolNode) && (value = element.key.value) && value.match?(/^[_A-Za-z]/) && !value.end_with?("=")) }
+        format_labels(q)
+      else
+        format_rockets(q)
+      end
+    end
+
+    private
+
+    def format_layout(q)
+      q.seplist(elements) do |element|
+        if element.is_a?(AssocNode)
+          yield element
+        else
+          q.format(element)
+        end
+      end
+    end
+
+    def format_identity(q)
+      format_layout(q) { |element| q.format(element) }
+    end
+
+    def format_labels(q)
+      format_layout(q) do |element|
+        if element.operator_loc.nil?
+          q.format(element)
+        else
+          key = element.key
+
+          if key.is_a?(InterpolatedSymbolNode)
+            opening = key.opening
+
+            if opening.start_with?("%")
+              q.group do
+                q.text("\"")
+                key.parts.each { |part| q.format(part) }
+                q.text("\":")
+              end
+            else
+              q.group do
+                q.text(key.opening[1..])
+                key.parts.each { |part| q.format(part) }
+                q.text(key.closing)
+                q.text(":")
+              end
+            end
+          elsif key.is_a?(SymbolNode)
+            q.text(key.value)
+            q.text(":")
+          else
+            raise "Unexpected key: #{key.inspect}"
+          end
+
+          q.indent do
+            q.breakable_space
+            q.format(element.value)
+          end
+        end
+      end
+    end
+
+    def format_rockets(q)
+      format_layout(q) do |element|
+        key = element.key
+
+        if key.is_a?(InterpolatedSymbolNode)
+          opening = key.opening
+
+          if opening.start_with?("%")
+            q.format(key)
+          else
+            q.group do
+              q.text(opening)
+              key.parts.each { |part| q.format(part) }
+              q.text(key.closing)
+            end
+          end
+        elsif key.is_a?(SymbolNode)
+          q.text(":")
+          q.text(key.value)
+        else
+          q.format(key)
+        end
+
+        q.text(" ")
+        operator_loc = element.operator_loc
+        operator_loc ? q.loc(operator_loc) : q.text("=>")
+
+        q.indent do
+          q.breakable_space
+          q.format(element.value)
+        end
+      end
     end
   end
 
@@ -1707,11 +1989,7 @@ module YARP
     def format(q)
       q.group do
         q.text("->")
-
-        if parameters
-          q.text(" ")
-          q.format(parameters)
-        end
+        q.format(parameters) if parameters
 
         if body
           q.text(" ")
@@ -2259,19 +2537,20 @@ module YARP
     #     ^^^^^^^^^^^^^^
     def format(q)
       q.group do
-        q.format(expression)
-        q.text(" ")
+        q.text("begin")
+        q.indent do
+          q.breakable_force
+          q.format(expression)
+        end
+        q.breakable_force
         q.loc(keyword_loc)
-
-        if keyword_loc.comments.any?
-          q.indent do
-            q.breakable_space
-            q.format(rescue_expression)
-          end
-        else
-          q.text(" ")
+        q.text(" StandardError")
+        q.indent do
+          q.breakable_force
           q.format(rescue_expression)
         end
+        q.breakable_force
+        q.text("end")
       end
     end
   end
@@ -2443,7 +2722,23 @@ module YARP
     #     [*a]
     #      ^^
     def format(q)
-      q.format_prefix(operator_loc, expression)
+      expression = self.expression
+      operator_loc = self.operator_loc
+
+      if expression
+        q.group do
+          q.text("*")
+          operator_loc.comments.each { |comment| comment.format(self) }
+
+          q.nest(1) do
+            q.breakable_empty
+            q.format(expression)
+          end
+        end
+      else
+        q.text("*")
+        operator_loc.comments.each { |comment| comment.format(self) }
+      end
     end
   end
 
