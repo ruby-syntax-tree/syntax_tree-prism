@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "prettier_print"
-require "yarp"
+require "prism"
 
-module YARP
+module Prism
   class ParseResult
     # Format the syntax tree using the default options.
     def format
@@ -25,5 +25,5 @@ module YARP
   end
 end
 
-require "syntax_tree/yarp/formatter"
-require "syntax_tree/yarp/nodes"
+require "syntax_tree/prism/formatter"
+require "syntax_tree/prism/nodes"

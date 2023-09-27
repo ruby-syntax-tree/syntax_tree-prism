@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module YARP
+module Prism
   class Comment
     def slice
       location.slice
@@ -508,7 +508,14 @@ module YARP
     def format(q)
       message = self.message
       name = self.name
-      arguments = self.arguments
+
+      arguments = [*self.arguments&.arguments]
+      block = self.block
+
+      if block.is_a?(BlockArgumentNode)
+        arguments << block
+        block = nil
+      end
 
       unless safe_navigation?
         case name.to_sym
@@ -532,28 +539,28 @@ module YARP
             return
           end
 
-          if !arguments && !block
+          if arguments.empty? && block.nil?
             q.format_prefix(message_loc, receiver)
             return
           end
         when :+@, :-@, :~
-          if !arguments && !block
+          if arguments.empty? && block.nil?
             q.format_prefix(message_loc, receiver)
             return
           end
         when :+, :-, :*, :/, :==, :>, :<, :>=, :<=, :<=>, :<<, :>>
-          if arguments&.arguments.length == 1 && !block
-            q.format_binary(receiver, message_loc, arguments)
+          if arguments.length == 1 && block.nil?
+            q.format_binary(receiver, message_loc, arguments.first)
             return
           end
         when :**
-          if arguments&.arguments.length == 1 && !block
+          if arguments.length == 1 && block.nil?
             q.group do
               q.format(receiver)
               q.text("**")
               q.indent do
                 q.breakable_empty
-                q.format(arguments)
+                q.seplist(arguments) { |argument| q.format(argument) }
               end
             end
 
@@ -564,10 +571,10 @@ module YARP
             q.format(receiver)
             q.text("[")
 
-            if arguments
+            if arguments.any?
               q.indent do
                 q.breakable_empty
-                q.format(arguments)
+                q.seplist(arguments) { |argument| q.format(argument) }
               end
 
               q.breakable_empty
@@ -583,9 +590,9 @@ module YARP
 
           return
         when :[]=
-          if arguments
+          if arguments.any?
             q.group do
-              *before, after = arguments.arguments
+              *before, after = arguments
 
               q.group do
                 q.format(receiver)
@@ -644,21 +651,21 @@ module YARP
             q.text(message)
           end
 
-        if arguments && arguments.arguments.length == 1 && name.end_with?("=") && !block
+        if arguments.length == 1 && name.end_with?("=") && block.nil?
           q.text(" =")
           q.indent do
             q.breakable_space
-            q.format(arguments)
+            q.seplist(arguments) { |argument| q.format(argument) }
           end
-        elsif opening_loc && arguments && closing_loc
+        elsif opening_loc && arguments.any? && closing_loc
           q.text("(")
           q.indent do
             q.breakable_empty
-            q.format(arguments)
+            q.seplist(arguments) { |argument| q.format(argument) }
           end
           q.breakable_empty
           q.text(")")
-        elsif arguments
+        elsif arguments.any?
           q.text(" ")
           align(q, self, q.last_position(doc))
         elsif opening_loc && closing_loc

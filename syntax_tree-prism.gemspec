@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 Gem::Specification.new do |spec|
-  spec.name = "syntax_tree-yarp"
+  spec.name = "syntax_tree-prism"
   spec.version = "0.1.0"
   spec.authors = ["Kevin Newton"]
   spec.email = ["kddnewton@gmail.com"]
 
   spec.summary = "WIP"
-  spec.homepage = "https://github.com/ruby-syntax-tree/syntax_tree-yarp"
+  spec.homepage = "https://github.com/ruby-syntax-tree/syntax_tree-prism"
   spec.license = "MIT"
   spec.metadata = { "rubygems_mfa_required" => "true" }
 
@@ -22,5 +22,5 @@ Gem::Specification.new do |spec|
   spec.require_paths = %w[lib]
 
   spec.add_dependency "prettier_print", ">= 1.2.0"
-  spec.add_dependency "yarp", ">= 0.12.0"
+  spec.add_dependency "prism", ">= 0.12.0"
 end

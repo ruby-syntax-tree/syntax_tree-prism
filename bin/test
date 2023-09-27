@@ -4,7 +4,7 @@
 require "bundler/setup"
 
 $:.unshift(File.expand_path("../lib", __dir__))
-require "syntax_tree/yarp"
+require "syntax_tree/prism"
 
 END {
   failures = DATA.readlines(chomp: true)
@@ -18,7 +18,7 @@ END {
         source, formatted = source.tap(&:shift).join.split("-\n")
         formatted ||= source
 
-        actual = YARP.parse(source).format
+        actual = Prism.parse(source).format
         name = "#{File.basename(filepath)}:#{index}"
 
         if actual != formatted
@@ -33,10 +33,10 @@ END {
 
   puts failures
 
-  YARP::TESTS.each do |clazz, cases|
+  Prism::TESTS.each do |clazz, cases|
     cases.each do |(output, input, block)|
       output = output.gsub("{{long}}", "a" * 80)
-      result = YARP.parse(input.gsub("{{long}}", "a" * 80))
+      result = Prism.parse(input.gsub("{{long}}", "a" * 80))
 
       node = result.value.statements.body.last
       node = block.call(node) if block

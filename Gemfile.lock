@@ -1,21 +1,26 @@
 PATH
+  remote: ../../ruby/prism
+  specs:
+    prism (0.12.0)
+
+PATH
   remote: .
   specs:
-    syntax_tree-yarp (0.1.0)
+    syntax_tree-prism (0.1.0)
       prettier_print (>= 1.2.0)
-      yarp (>= 0.12.0)
+      prism (>= 0.12.0)
 
 GEM
   remote: https://rubygems.org/
   specs:
     prettier_print (1.2.1)
-    yarp (0.12.0)
 
 PLATFORMS
   arm64-darwin-22
 
 DEPENDENCIES
-  syntax_tree-yarp!
+  prism!
+  syntax_tree-prism!
 
 BUNDLED WITH
    2.4.13

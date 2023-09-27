@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module YARP
+module Prism
   # A slightly enhanced PrettierPrint that knows how to format recursively
   # including comments.
   class Formatter < PrettierPrint
