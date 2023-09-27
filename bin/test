@@ -55,7 +55,6 @@ assign.rb:6
 assoc.rb:1
 assoc.rb:8
 bare_assoc_hash.rb:4
-bodystmt.rb:6
 brace_block.rb:0
 brace_block.rb:1
 break.rb:8
@@ -150,7 +149,6 @@ regexp_literal.rb:14
 regexp_literal.rb:15
 regexp_literal.rb:17
 regexp_literal.rb:18
-rescue.rb:0
 return.rb:8
 return.rb:9
 return.rb:12

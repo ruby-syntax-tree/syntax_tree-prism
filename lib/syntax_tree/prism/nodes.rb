@@ -2578,6 +2578,8 @@ module Prism
           if exceptions.any?
             q.text(" ")
             q.nest(7) { q.seplist(exceptions) { |exception| q.format(exception) } }
+          elsif reference.nil?
+            q.text(" StandardError")
           end
 
           if reference
