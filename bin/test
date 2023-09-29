@@ -53,7 +53,6 @@ aref_field.rb:4
 assoc.rb:1
 assoc.rb:8
 bare_assoc_hash.rb:4
-brace_block.rb:0
 brace_block.rb:1
 break.rb:8
 break.rb:9
@@ -65,12 +64,10 @@ call.rb:11
 call.rb:14
 call.rb:15
 call.rb:16
-command.rb:8
 command.rb:9
 command_call.rb:2
 command_call.rb:3
 command_call.rb:4
-command_call.rb:5
 command_call.rb:6
 command_call.rb:7
 command_call.rb:8
@@ -84,7 +81,6 @@ def_endless.rb:9
 defined.rb:2
 defs.rb:2
 defs.rb:5
-do_block.rb:0
 do_block.rb:1
 do_block.rb:2
 do_block.rb:3
@@ -109,7 +105,6 @@ if.rb:4
 if.rb:5
 if.rb:6
 if.rb:7
-if.rb:8
 if.rb:10
 if.rb:12
 if.rb:13
@@ -123,7 +118,6 @@ lambda.rb:19
 lambda.rb:20
 lambda.rb:21
 massign.rb:1
-method_add_block.rb:0
 mlhs.rb:1
 mlhs_paren.rb:0
 mlhs_paren.rb:3

@@ -408,11 +408,14 @@ module Prism
             end
 
             if body
-              q.text(" ")
-              q.format(body)
+              q.indent do
+                q.breakable_space
+                q.format(body)
+              end
             end
 
-            q.text(" }")
+            q.breakable_space if parameters || body
+            q.text("}")
           end
       end
     end
