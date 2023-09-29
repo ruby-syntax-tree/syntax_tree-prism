@@ -3159,40 +3159,32 @@ module Prism
     #     ^^^^^^^^^^^^^^^^^^^^
     def format(q)
       if begin_modifier? || statements&.contains_write?
-        q.group do
-          q.format(statements)
-          q.text(" while ")
-          q.format(predicate)
-        end
+        q.group { format_flat(q) }
       elsif statements.nil? || keyword_loc.comments.any? || closing_loc&.comments&.any? || predicate.contains_write?
         q.group do
-          q.loc(keyword_loc)
-          q.text(" ")
-          q.nest(6) { q.format(predicate) }
-          q.format_body(statements, closing_loc.comments, false)
-          q.breakable_force
-          q.text("end")
+          format_break(q)
+          q.break_parent
         end
       else
-        q.group do
-          q
-            .if_break do
-              q.text("while ")
-              q.nest(6) { q.format(predicate) }
-              q.indent do
-                q.breakable_space
-                q.format(statements)
-              end
-              q.breakable_space
-              q.text("end")
-            end
-            .if_flat do
-              q.format(statements)
-              q.text(" while ")
-              q.format(predicate)
-            end
-        end
+        q.group { q.if_break { format_break(q) }.if_flat { format_flat(q) } }
       end
+    end
+
+    private
+
+    def format_break(q)
+      q.loc(keyword_loc)
+      q.text(" ")
+      q.nest(6) { q.format(predicate) }
+      q.format_body(statements, closing_loc&.comments || [], false)
+      q.breakable_space
+      q.text("end")
+    end
+
+    def format_flat(q)
+      q.format(statements)
+      q.text(" while ")
+      q.format(predicate)
     end
   end
 
