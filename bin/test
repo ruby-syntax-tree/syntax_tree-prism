@@ -35,9 +35,11 @@ END {
 }
 
 __END__
-assoc.rb:1
+assign.rb:6
+assoc.rb:4
 assoc.rb:8
 bare_assoc_hash.rb:4
+bare_assoc_hash.rb:5
 brace_block.rb:1
 break.rb:9
 call.rb:7
@@ -52,7 +54,6 @@ command_call.rb:3
 command_call.rb:4
 command_call.rb:7
 command_call.rb:9
-command_call.rb:10
 command_call.rb:11
 def.rb:6
 def_endless.rb:9
@@ -66,7 +67,7 @@ elsif.rb:3
 embdoc.rb:0
 embdoc.rb:1
 end_content.rb:0
-heredoc.rb:17
+hash.rb:6
 heredoc.rb:18
 if.rb:3
 if.rb:7

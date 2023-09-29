@@ -427,39 +427,12 @@ module Prism
 
     # foo = bar
     def format_write(operator_loc, value)
-      indent_value = true
-      current = value
-
-      # Here, determine whether or not we should attempt to indent the value of
-      # the write. For certain nodes we can to avoid this because it will look
-      # strange.
-      until current.nil?
-        case current.type
-        when :array_node
-          indent_value = current.opening_loc.nil?
-          break
-        when :hash_node, :lambda_node
-          indent_value = false
-          break
-        when :string_node, :x_string_node, :interpolated_string_node, :interpolated_x_string_node
-          indent_value = current.opening_loc ? !current.opening.start_with?("<<") : true
-          break
-        when :call_node
-          current = current.receiver
-        when :interpolated_symbol_node
-          indent_value = current.opening_loc ? !current.opening.start_with?("%s") : true
-          break
-        else
-          break
-        end
-      end
-
       group do
         yield
         text(" ")
         loc(operator_loc)
 
-        if indent_value
+        if value.indent_write?
           indent do
             breakable_space
             format(value)

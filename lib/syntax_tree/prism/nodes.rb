@@ -42,6 +42,23 @@ module Prism
 
       false
     end
+
+    def indent_write?
+      case type
+      when :array_node
+        opening_loc.nil?
+      when :hash_node, :lambda_node
+        false
+      when :string_node, :x_string_node, :interpolated_string_node, :interpolated_x_string_node
+        opening_loc ? !opening.start_with?("<<") : true
+      when :call_node
+        receiver ? receiver.indent_write? : true
+      when :interpolated_symbol_node
+        opening_loc ? !opening.start_with?("%s") : true
+      else
+        true
+      end
+    end
   end
 
   class AliasGlobalVariableNode
@@ -242,14 +259,29 @@ module Prism
       if operator_loc
         q.format(key)
         q.text(" #{operator}")
-        q.breakable_space
-        q.format(value)
+
+        if value.indent_write?
+          q.indent do
+            q.breakable_space
+            q.format(value)
+          end
+        else
+          q.text(" ")
+          q.format(value)
+        end
       else
         q.format(key)
 
         if value && !value.is_a?(ImplicitNode)
-          q.text(" ")
-          q.format(value)
+          if value.indent_write?
+            q.indent do
+              q.breakable_space
+              q.format(value)
+            end
+          else
+            q.text(" ")
+            q.format(value)
+          end
         end
       end
     end
