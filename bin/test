@@ -87,11 +87,7 @@ do_block.rb:3
 do_block.rb:4
 dyna_symbol.rb:0
 dyna_symbol.rb:4
-else.rb:1
-else.rb:3
-else.rb:4
 elsif.rb:0
-elsif.rb:1
 elsif.rb:2
 elsif.rb:3
 embdoc.rb:0
@@ -99,7 +95,6 @@ embdoc.rb:1
 end_content.rb:0
 excessed_comma.rb:0
 heredoc.rb:17
-if.rb:1
 if.rb:3
 if.rb:4
 if.rb:5
@@ -157,14 +152,12 @@ unless_mod.rb:3
 until.rb:3
 until.rb:4
 until.rb:5
-until.rb:6
 until_mod.rb:3
 when.rb:7
 when.rb:8
 while.rb:3
 while.rb:4
 while.rb:5
-while.rb:6
 while_mod.rb:3
 yield.rb:1
 yield.rb:3
