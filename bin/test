@@ -39,21 +39,17 @@ assoc.rb:1
 assoc.rb:8
 bare_assoc_hash.rb:4
 brace_block.rb:1
-break.rb:8
 break.rb:9
 call.rb:7
 call.rb:8
 call.rb:9
 call.rb:10
 call.rb:11
-call.rb:14
 call.rb:15
 call.rb:16
-command.rb:9
 command_call.rb:2
 command_call.rb:3
 command_call.rb:4
-command_call.rb:6
 command_call.rb:7
 command_call.rb:9
 command_call.rb:10
@@ -62,7 +58,6 @@ def.rb:6
 def_endless.rb:9
 defined.rb:2
 do_block.rb:2
-do_block.rb:3
 do_block.rb:4
 dyna_symbol.rb:0
 dyna_symbol.rb:4
@@ -82,7 +77,6 @@ ifop.rb:3
 label.rb:1
 lambda.rb:18
 lambda.rb:19
-next.rb:18
 next.rb:19
 not.rb:3
 not.rb:5

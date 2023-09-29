@@ -371,33 +371,48 @@ module Prism
     #    [1, 2, 3].each { |i| puts x }
     #                   ^^^^^^^^^^^^^^
     def format(q)
-      q.group do
-        q
-          .if_break do
-            q.text("do")
-
-            if parameters
-              q.text(" ")
-              q.format(parameters)
-            end
-
-            q.format_body(body, closing_loc.comments, false)
-            q.breakable_space
-            q.text("end")
-          end
-          .if_flat do
-            q.text("{")
-
-            if parameters
-              q.text(" ")
-              q.format(parameters)
-            end
-
-            q.format_body(body, closing_loc.comments, false)
-            q.breakable_space if parameters || body
-            q.text("}")
-          end
+      # If the receiver of this block a call without parentheses, so we need to
+      # break the block.
+      if q.parent.is_a?(CallNode) && q.parent.arguments && q.parent.opening_loc.nil?
+        q.break_parent
+        format_break(q)
+      else
+        q.group do
+          q
+            .if_break { format_break(q) }
+            .if_flat { format_flat(q) }
+        end
       end
+    end
+
+    private
+
+    def format_break(q)
+      q.text("do")
+
+      if parameters
+        q.text(" ")
+        q.format(parameters)
+      end
+
+      q.format_body(body, closing_loc.comments, false)
+      q.breakable_space
+      q.text("end")
+    end
+
+    def format_flat(q)
+      q.text("{")
+
+      if parameters
+        q.text(" ")
+        q.format(parameters)
+        q.breakable_space if body
+      end
+
+      q.format_body(body, closing_loc.comments, false)
+      q.breakable_space if parameters || body
+
+      q.text("}")
     end
   end
 
