@@ -339,9 +339,35 @@ module Prism
 
         case argument
         when ParenthesesNode
-          if (body = argument.body).is_a?(StatementsNode) && body.body.length == 1 && (first = body.body.first) && PARENTHESES_BYPASS.include?(first.class)
-            text("#{keyword} ")
-            format(first)
+          body = argument.body
+
+          if body.is_a?(StatementsNode) && body.body.length == 1
+            first = body.body.first
+
+            if PARENTHESES_BYPASS.include?(first.class) || (first.is_a?(ArrayNode) && first.elements.length <= 1)
+              text("#{keyword} ")
+              format(first)
+            elsif first.is_a?(ArrayNode)
+              group do
+                text(keyword)
+                if_break { text("[") }.if_flat { text(" ") }
+
+                indent do
+                  breakable_empty
+                  seplist(first.elements) { |element| format(element) }
+                end
+
+                if_break do
+                  breakable_empty
+                  text("]")
+                end
+              end
+            else
+              group do
+                text(keyword)
+                format(argument)
+              end
+            end
           else
             group do
               text(keyword)

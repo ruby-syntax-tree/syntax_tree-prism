@@ -130,9 +130,6 @@ mlhs.rb:1
 mlhs_paren.rb:0
 mlhs_paren.rb:3
 mlhs_paren.rb:4
-next.rb:15
-next.rb:16
-next.rb:17
 next.rb:18
 next.rb:19
 not.rb:3
@@ -149,7 +146,6 @@ regexp_literal.rb:14
 regexp_literal.rb:15
 regexp_literal.rb:17
 regexp_literal.rb:18
-return.rb:8
 return.rb:9
 return.rb:12
 statements.rb:0
