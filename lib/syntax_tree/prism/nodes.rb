@@ -389,13 +389,7 @@ module Prism
               q.format(parameters)
             end
 
-            if body
-              q.indent do
-                q.breakable_space
-                q.format(body)
-              end
-            end
-
+            q.format_body(body, closing_loc.comments, false)
             q.breakable_space
             q.text("end")
           end
@@ -407,13 +401,7 @@ module Prism
               q.format(parameters)
             end
 
-            if body
-              q.indent do
-                q.breakable_space
-                q.format(body)
-              end
-            end
-
+            q.format_body(body, closing_loc.comments, false)
             q.breakable_space if parameters || body
             q.text("}")
           end
@@ -2383,8 +2371,13 @@ module Prism
     #           ^^^^^^^
     #     end
     def format(q)
-      q.seplist([*requireds, *optionals, *rest, *posts, *keywords, *keyword_rest, *block]) do |parameter|
-        q.format(parameter)
+      if !rest.nil? && rest.operator == ","
+        q.seplist([*requireds, *optionals]) { |parameter| q.format(parameter) }
+        q.text(",")
+      else
+        q.seplist([*requireds, *optionals, *rest, *posts, *keywords, *keyword_rest, *block]) do |parameter|
+          q.format(parameter)
+        end
       end
     end
   end
