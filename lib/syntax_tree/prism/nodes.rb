@@ -2235,17 +2235,27 @@ module Prism
     #     a, b, c = 1, 2, 3
     #     ^^^^^^^
     def format(q)
+      targets = self.targets
+      implicit_splat = false
+
+      if targets.last.is_a?(SplatNode) && targets.last.operator == ","
+        targets.pop
+        implicit_splat = true
+      end
+
       q.group do
         if lparen_loc && rparen_loc
           q.text("(")
           q.indent do
             q.breakable_empty
             q.seplist(targets) { |target| q.format(target) }
+            q.text(",") if implicit_splat
           end
           q.breakable_empty
           q.text(")")
         else
           q.seplist(targets) { |target| q.format(target) }
+          q.text(",") if implicit_splat
         end
       end
     end
@@ -2257,18 +2267,32 @@ module Prism
     #     a, b, c = 1, 2, 3
     #     ^^^^^^^^^^^^^^^^^
     def format(q)
+      targets = self.targets
+      implicit_splat = false
+
+      while targets.length == 1 && targets.first.is_a?(MultiTargetNode)
+        targets = targets.first.targets
+      end
+
+      if targets.last.is_a?(SplatNode) && targets.last.operator == ","
+        targets.pop
+        implicit_splat = true
+      end
+
       q.format_write(operator_loc, value) do
         q.group do
-          if lparen_loc && rparen_loc
+          if lparen_loc&.comments&.any? || rparen_loc&.comments&.any?
             q.loc(lparen_loc)
             q.indent do
               q.breakable_empty
               q.seplist(targets) { |target| q.format(target) }
+              q.text(",") if implicit_splat
             end
             q.breakable_empty
             q.text(")")
           else
             q.seplist(targets) { |target| q.format(target) }
+            q.text(",") if implicit_splat
           end
         end
       end
