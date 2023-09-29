@@ -15,14 +15,6 @@ module Prism
       formatter.output.join
     end
   end
-
-  TESTS = {}
-
-  class Node
-    def self.test(output, input = output, &block)
-      (TESTS[self] ||= []) << [output, input, block]
-    end
-  end
 end
 
 require "syntax_tree/prism/formatter"

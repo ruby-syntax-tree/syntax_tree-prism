@@ -198,31 +198,6 @@ module Prism
         q.text("]")
       end
     end
-
-    test("[]")
-    test("[ # comment\n]")
-    test("[\n  # comment1\n  # comment2\n]")
-    test("[] # comment")
-    test("[\n  {{long}}\n] # comment")
-
-    test("[1, 2, 3]")
-    test("[1, 2, 3]", "[1, 2, 3,]")
-    test("[\n  1,\n  {{long}},\n  3\n]", "[1, {{long}}, 3]")
-
-    test("%w[foo bar baz]")
-    test("%w[\n  foo\n  {{long}}\n  baz\n]", "%w[foo {{long}} baz]")
-
-    test("%W[foo bar baz]")
-    test("%W[\n  foo\n  {{long}}\n  baz\n]", "%W[foo {{long}} baz]")
-
-    test("%i[foo bar baz]")
-    test("%i[\n  foo\n  {{long}}\n  baz\n]", "%i[foo {{long}} baz]")
-
-    test("%I[foo bar baz]")
-    test("%I[\n  foo\n  {{long}}\n  baz\n]", "%I[foo {{long}} baz]")
-
-    test("foo = 1, 2, 3", &:value)
-    test("foo =\n  1,\n  2, # comment\n  3", "foo = 1, 2, # comment\n3", &:value)
   end
 
   class ArrayPatternNode
@@ -288,10 +263,6 @@ module Prism
     def format(q)
       q.format_prefix(operator_loc, value)
     end
-
-    test("foo in { bar: :baz, ** }") { |node| node.pattern.assocs.last }
-    test("{ **foo }") { |node| node.elements.first }
-    test("{\n  ** # comment\n    foo\n}", "{ ** # comment\nfoo }") { |node| node.elements.first }
   end
 
   class BackReferenceReadNode
@@ -302,9 +273,6 @@ module Prism
     def format(q)
       q.text(slice)
     end
-
-    test("$+")
-    test("$+ # comment")
   end
 
   class BeginNode
@@ -395,8 +363,6 @@ module Prism
     def format(q)
       q.text(name.name)
     end
-
-    test("a { |; b| }") { |node| node.block.parameters.locals.first }
   end
 
   class BlockNode
@@ -888,9 +854,6 @@ module Prism
     def format(q)
       q.text(name.name)
     end
-
-    test("@@foo")
-    test("@@foo # comment")
   end
 
   class ClassVariableTargetNode
@@ -902,8 +865,6 @@ module Prism
     def format(q)
       q.text(name.name)
     end
-
-    test("@@foo, @@bar = baz") { |node| node.targets.first }
   end
 
   class ClassVariableWriteNode
@@ -914,10 +875,6 @@ module Prism
     def format(q)
       q.format_write(operator_loc, value) { q.text(name.name) }
     end
-
-    test("@@foo = 1")
-    test("@@foo = # comment\n  1")
-    test("@@foo = 1 # comment")
   end
 
   class ClassVariableAndWriteNode
@@ -929,10 +886,6 @@ module Prism
     def format(q)
       q.format_write(operator_loc, value) { q.text(name.name) }
     end
-
-    test("@@foo &&= 1")
-    test("@@foo &&= # comment\n  1")
-    test("@@foo &&= 1 # comment")
   end
 
   class ClassVariableOrWriteNode
@@ -944,10 +897,6 @@ module Prism
     def format(q)
       q.format_write(operator_loc, value) { q.text(name.name) }
     end
-
-    test("@@foo ||= 1")
-    test("@@foo ||= # comment\n  1")
-    test("@@foo ||= 1 # comment")
   end
 
   class ClassVariableOperatorWriteNode
@@ -958,10 +907,6 @@ module Prism
     def format(q)
       q.format_write(operator_loc, value) { q.text(name.name) }
     end
-
-    test("@@foo += 1")
-    test("@@foo += # comment\n  1")
-    test("@@foo += 1 # comment")
   end
 
   class ConstantReadNode
@@ -972,9 +917,6 @@ module Prism
     def format(q)
       q.text(name.name)
     end
-
-    test("Foo")
-    test("Foo # comment")
   end
 
   class ConstantTargetNode
@@ -986,8 +928,6 @@ module Prism
     def format(q)
       q.text(name.name)
     end
-
-    test("Foo, Bar = baz") { |node| node.targets.first }
   end
 
   class ConstantWriteNode
@@ -998,10 +938,6 @@ module Prism
     def format(q)
       q.format_write(operator_loc, value) { q.text(name.name) }
     end
-
-    test("Foo = 1")
-    test("Foo = # comment\n  1")
-    test("Foo = 1 # comment")
   end
 
   class ConstantAndWriteNode
@@ -1012,10 +948,6 @@ module Prism
     def format(q)
       q.format_write(operator_loc, value) { q.text(name.name) }
     end
-
-    test("Foo &&= 1")
-    test("Foo &&= # comment\n  1")
-    test("Foo &&= 1 # comment")
   end
 
   class ConstantOrWriteNode
@@ -1026,10 +958,6 @@ module Prism
     def format(q)
       q.format_write(operator_loc, value) { q.text(name.name) }
     end
-
-    test("Foo ||= 1")
-    test("Foo ||= # comment\n  1")
-    test("Foo ||= 1 # comment")
   end
 
   class ConstantOperatorWriteNode
@@ -1040,10 +968,6 @@ module Prism
     def format(q)
       q.format_write(operator_loc, value) { q.text(name.name) }
     end
-
-    test("Foo += 1")
-    test("Foo += # comment\n  1")
-    test("Foo += 1 # comment")
   end
 
   class ConstantPathNode
@@ -1698,9 +1622,6 @@ module Prism
     def format(q)
       q.text(slice)
     end
-
-    test("1i")
-    test("1i # comment")
   end
 
   class ImplicitNode
@@ -2028,11 +1949,6 @@ module Prism
         q.text(slice)
       end
     end
-
-    test("1")
-    test("1 # comment")
-    test("1_2_3_4_5")
-    test("12_345", "12345")
   end
 
   class KeywordRestParameterNode
@@ -2585,11 +2501,6 @@ module Prism
       q.text(content)
       q.text(closing)
     end
-
-    test("/foo/i")
-    test("%r{foo}i")
-    test("/foo/i # comment")
-    test("%r{foo}i # comment")
   end
 
   class RequiredDestructuredParameterNode

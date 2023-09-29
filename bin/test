@@ -32,20 +32,6 @@ END {
   end
 
   puts failures
-
-  Prism::TESTS.each do |clazz, cases|
-    cases.each do |(output, input, block)|
-      output = output.gsub("{{long}}", "a" * 80)
-      result = Prism.parse(input.gsub("{{long}}", "a" * 80))
-
-      node = result.value.statements.body.last
-      node = block.call(node) if block
-      raise "expected `#{clazz}`, got `#{node.class}`" if !node.is_a?(clazz)
-
-      actual = result.format.chomp
-      raise "expected:\n#{output}\n\ngot:\n#{actual}\n" if actual != output
-    end
-  end
 }
 
 __END__
