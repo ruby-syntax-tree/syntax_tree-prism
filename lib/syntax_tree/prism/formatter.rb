@@ -470,5 +470,56 @@ module Prism
         end
       end
     end
+
+    # If you have a modifier statement (for instance a modifier if statement or
+    # a modifier while loop) there are times when you need to wrap the entire
+    # statement in parentheses. This occurs when you have something like:
+    #
+    #     foo[:foo] =
+    #       if bar?
+    #         baz
+    #       end
+    #
+    # Normally we would shorten this to an inline version, which would result in:
+    #
+    #     foo[:foo] = baz if bar?
+    #
+    # but this actually has different semantic meaning. The first example will
+    # result in a nil being inserted into the hash for the :foo key, whereas the
+    # second example will result in an empty hash because the if statement
+    # applies to the entire assignment.
+    #
+    # We can fix this in a couple of ways. We can use the then keyword, as in:
+    #
+    #     foo[:foo] = if bar? then baz end
+    #
+    # But this isn't used very often. We can also just leave it as is with the
+    # multi-line version, but for a short predicate and short value it looks
+    # verbose. The last option and the one used here is to add parentheses on
+    # both sides of the expression, as in:
+    #
+    #     foo[:foo] = (baz if bar?)
+    #
+    # This approach maintains the nice conciseness of the inline version, while
+    # keeping the correct semantic meaning.
+    def format_flat_parentheses
+      case parent&.type
+      when :arguments_node, 
+            :call_and_write_node, :call_or_write_node, :call_operator_write_node,
+            :class_variable_write_node, :class_variable_and_write_node, :class_variable_or_write_node, :class_variable_operator_write_node,
+            :constant_write_node, :constant_and_write_node, :constant_or_write_node, :constant_operator_write_node,
+            :constant_path_write_node, :constant_path_and_write_node, :constant_path_or_write_node, :constant_path_operator_write_node,
+            :global_variable_write_node, :global_variable_and_write_node, :global_variable_or_write_node, :global_variable_operator_write_node,
+            :instance_variable_write_node, :instance_variable_and_write_node, :instance_variable_or_write_node, :instance_variable_operator_write_node,
+            :local_variable_write_node, :local_variable_and_write_node, :local_variable_or_write_node, :local_variable_operator_write_node,
+            :multi_write_node,
+            :assoc_node, :call_node, :defined_node
+        text("(")
+        yield
+        text(")")
+      else
+        yield
+      end
+    end
   end
 end
