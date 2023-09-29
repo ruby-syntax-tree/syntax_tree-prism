@@ -215,22 +215,6 @@ module Prism
     # Format patterns                                                          #
     ############################################################################
 
-    PARENTHESES_BYPASS = [
-      ClassVariableReadNode,
-      ConstantReadNode,
-      FalseNode,
-      FloatNode,
-      GlobalVariableReadNode,
-      ImaginaryNode,
-      InstanceVariableReadNode,
-      IntegerNode,
-      LocalVariableReadNode,
-      NilNode,
-      RationalNode,
-      SelfNode,
-      TrueNode
-    ]
-
     # foo or bar
     def format_binary(left, operator_loc, right)
       group do
@@ -297,14 +281,17 @@ module Prism
 
     # <<~FOO FOO
     def format_heredoc(node, parts)
+      separator = HEREDOC_SEPARATOR
+
       group do
         text(node.opening)
         line_suffix(priority: HEREDOC_PRIORITY) do
           group do
-            target << HEREDOC_SEPARATOR
+            target << separator
 
             parts.each do |part|
-              if part.is_a?(StringNode) || part.is_a?(XStringNode)
+              case part.type
+              when :string_node, :x_string_node
                 value = part.content
                 first = true
 
@@ -312,13 +299,13 @@ module Prism
                   if first
                     first = false
                   else
-                    target << HEREDOC_SEPARATOR
+                    target << separator
                   end
 
                   text(line)
                 end
 
-                target << HEREDOC_SEPARATOR if value.end_with?("\n")
+                target << separator if value.end_with?("\n")
               else
                 format(part)
               end
@@ -337,30 +324,38 @@ module Prism
       elsif arguments.arguments.length == 1
         argument = arguments.arguments.first
 
-        case argument
-        when ParenthesesNode
+        case argument.type
+        when :parentheses_node
           body = argument.body
 
           if body.is_a?(StatementsNode) && body.body.length == 1
-            first = body.body.first
-
-            if PARENTHESES_BYPASS.include?(first.class) || (first.is_a?(ArrayNode) && first.elements.length <= 1)
+            case (first = body.body.first).type
+            when :class_variable_read_node, :constant_read_node, :false_node,
+                 :float_node, :global_variable_read_node, :imaginary_node,
+                 :instance_variable_read_node, :integer_node,
+                 :local_variable_read_node, :nil_node, :rational_node,
+                 :self_node, :true_node
               text("#{keyword} ")
               format(first)
-            elsif first.is_a?(ArrayNode)
-              group do
-                text(keyword)
-                if_break { text("[") }.if_flat { text(" ") }
+            when :array_node
+              if first.elements.length > 1
+                group do
+                  text(keyword)
+                  if_break { text("[") }.if_flat { text(" ") }
 
-                indent do
-                  breakable_empty
-                  seplist(first.elements) { |element| format(element) }
-                end
+                  indent do
+                    breakable_empty
+                    seplist(first.elements) { |element| format(element) }
+                  end
 
-                if_break do
-                  breakable_empty
-                  text("]")
+                  if_break do
+                    breakable_empty
+                    text("]")
+                  end
                 end
+              else
+                text("#{keyword} ")
+                format(first)
               end
             else
               group do
@@ -374,7 +369,11 @@ module Prism
               format(argument)
             end
           end
-        when *PARENTHESES_BYPASS
+        when :class_variable_read_node, :constant_read_node, :false_node,
+             :float_node, :global_variable_read_node, :imaginary_node,
+             :instance_variable_read_node, :integer_node,
+             :local_variable_read_node, :nil_node, :rational_node, :self_node,
+             :true_node
           text("#{keyword} ")
           format(argument)
         else
@@ -435,19 +434,19 @@ module Prism
       # the write. For certain nodes we can to avoid this because it will look
       # strange.
       until current.nil?
-        case current
-        when ArrayNode
+        case current.type
+        when :array_node
           indent_value = current.opening_loc.nil?
           break
-        when HashNode, LambdaNode
+        when :hash_node, :lambda_node
           indent_value = false
           break
-        when StringNode, InterpolatedStringNode, XStringNode, InterpolatedXStringNode
+        when :string_node, :x_string_node, :interpolated_string_node, :interpolated_x_string_node
           indent_value = current.opening_loc ? !current.opening.start_with?("<<") : true
           break
-        when CallNode
+        when :call_node
           current = current.receiver
-        when InterpolatedSymbolNode
+        when :interpolated_symbol_node
           indent_value = current.opening_loc ? !current.opening.start_with?("%s") : true
           break
         else

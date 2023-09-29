@@ -688,15 +688,20 @@ module Prism
       if node.arguments && node.arguments.arguments.length == 1
         argument = node.arguments.arguments.first
 
-        if argument.is_a?(DefNode)
+        case argument.type
+        when :def_node
           q.format(arguments)
-        elsif argument.is_a?(CallNode) && !argument.opening_loc
-          align(q, argument, last)
+          return
+        when :call_node
+          if argument.opening_loc.nil?
+            align(q, argument, last)
+            return
+          end
         end
-      else
-        width = last + 1
-        q.nest(width > (q.maxwidth / 2) ? 0 : width) { q.format(arguments) }
       end
+
+      width = last + 1
+      q.nest(width > (q.maxwidth / 2) ? 0 : width) { q.format(arguments) }
     end
   end
 
@@ -1471,9 +1476,8 @@ module Prism
         if element.operator_loc.nil?
           q.format(element)
         else
-          key = element.key
-
-          if key.is_a?(InterpolatedSymbolNode)
+          case (key = element.key).type
+          when :interpolated_symbol_node
             opening = key.opening
 
             if opening.start_with?("%")
@@ -1488,7 +1492,7 @@ module Prism
                 q.text(":")
               end
             end
-          elsif key.is_a?(SymbolNode)
+          when :symbol_node
             q.text(key.value)
             q.text(":")
           else
@@ -1505,9 +1509,8 @@ module Prism
 
     def format_rockets(q)
       format_layout(q) do |element|
-        key = element.key
-
-        if key.is_a?(InterpolatedSymbolNode)
+        case (key = element.key).type
+        when :interpolated_symbol_node
           opening = key.opening
 
           if opening.start_with?("%")
@@ -1519,7 +1522,7 @@ module Prism
               q.text(key.closing)
             end
           end
-        elsif key.is_a?(SymbolNode)
+        when :symbol_node
           q.text(":")
           q.text(key.value)
         else
@@ -1884,9 +1887,8 @@ module Prism
         if element.operator_loc.nil?
           q.format(element)
         else
-          key = element.key
-
-          if key.is_a?(InterpolatedSymbolNode)
+          case (key = element.key).type
+          when :interpolated_symbol_node
             opening = key.opening
 
             if opening.start_with?("%")
@@ -1903,7 +1905,7 @@ module Prism
                 q.text(":")
               end
             end
-          elsif key.is_a?(SymbolNode)
+          when :symbol_node
             q.text(key.value)
             q.text(":")
           else
@@ -1920,9 +1922,8 @@ module Prism
 
     def format_rockets(q)
       format_layout(q) do |element|
-        key = element.key
-
-        if key.is_a?(InterpolatedSymbolNode)
+        case (key = element.key).type
+        when :interpolated_symbol_node
           opening = key.opening
 
           if opening.start_with?("%")
@@ -1934,7 +1935,7 @@ module Prism
               q.text(key.closing)
             end
           end
-        elsif key.is_a?(SymbolNode)
+        when :symbol_node
           q.text(":")
           q.text(key.value)
         else
@@ -2139,8 +2140,8 @@ module Prism
         q.format(value)
         q.text(" in")
 
-        case pattern
-        when ArrayPatternNode, HashPatternNode, FindPatternNode
+        case pattern.type
+        when :array_pattern_node, :hash_pattern_node, :find_pattern_node
           q.text(" ")
           q.format(pattern)
         else
@@ -2163,8 +2164,8 @@ module Prism
         q.format(value)
         q.text(" =>")
 
-        case pattern
-        when ArrayPatternNode, HashPatternNode, FindPatternNode
+        case pattern.type
+        when :array_pattern_node, :hash_pattern_node, :find_pattern_node
           q.text(" ")
           q.format(pattern)
         else

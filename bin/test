@@ -70,7 +70,6 @@ command_call.rb:3
 command_call.rb:4
 command_call.rb:6
 command_call.rb:7
-command_call.rb:8
 command_call.rb:9
 command_call.rb:10
 command_call.rb:11
@@ -105,13 +104,10 @@ if.rb:12
 if.rb:13
 if_mod.rb:3
 ifop.rb:1
-ifop.rb:2
 ifop.rb:3
 label.rb:1
 lambda.rb:18
 lambda.rb:19
-lambda.rb:20
-lambda.rb:21
 massign.rb:1
 mlhs.rb:1
 mlhs_paren.rb:0
@@ -123,14 +119,11 @@ not.rb:3
 not.rb:5
 params.rb:23
 params.rb:34
-rassign.rb:6
 regexp_literal.rb:1
 regexp_literal.rb:2
 regexp_literal.rb:3
 regexp_literal.rb:4
 regexp_literal.rb:12
-regexp_literal.rb:14
-regexp_literal.rb:15
 regexp_literal.rb:17
 regexp_literal.rb:18
 return.rb:9
