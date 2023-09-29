@@ -50,8 +50,6 @@ END {
 
 __END__
 aref_field.rb:4
-assign.rb:5
-assign.rb:6
 assoc.rb:1
 assoc.rb:8
 bare_assoc_hash.rb:4
