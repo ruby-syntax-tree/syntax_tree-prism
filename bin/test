@@ -73,13 +73,9 @@ command_call.rb:7
 command_call.rb:9
 command_call.rb:10
 command_call.rb:11
-def.rb:2
-def.rb:5
 def.rb:6
 def_endless.rb:9
 defined.rb:2
-defs.rb:2
-defs.rb:5
 do_block.rb:1
 do_block.rb:2
 do_block.rb:3

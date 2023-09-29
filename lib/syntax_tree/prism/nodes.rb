@@ -639,7 +639,6 @@ module Prism
           end
 
           return
-        when :call
         end
       end
 
@@ -651,7 +650,7 @@ module Prism
               q.text(call_operator == "&." ? "&." : ".")
             end
 
-            q.text(message)
+            q.text(message) if message
           end
 
         if arguments.length == 1 && name.end_with?("=") && block.nil?
@@ -1150,9 +1149,13 @@ module Prism
               q.format(parameters)
             end
             q.breakable_empty
-            rparen_loc ? q.loc(rparen_loc) : q.text(")")
+            q.text(")")
+
+            comment = rparen_loc&.comments&.first
+            q.text(" #{comment.slice}") if comment
           else
             q.loc(lparen_loc) if lparen_loc
+            q.breakable_empty if lparen_loc&.comments&.any?
             q.loc(rparen_loc) if rparen_loc
           end
         end
