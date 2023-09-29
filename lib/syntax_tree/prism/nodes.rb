@@ -18,6 +18,32 @@ module Prism
     end
   end
 
+  class Node
+    def contains_write?
+      queue = [self]
+
+      while (node = queue.shift)
+        case node.type
+        when :call_and_write_node, :call_or_write_node, :call_operator_write_node,
+             :class_variable_write_node, :class_variable_and_write_node, :class_variable_or_write_node, :class_variable_operator_write_node,
+             :constant_write_node, :constant_and_write_node, :constant_or_write_node, :constant_operator_write_node,
+             :constant_path_write_node, :constant_path_and_write_node, :constant_path_or_write_node, :constant_path_operator_write_node,
+             :global_variable_write_node, :global_variable_and_write_node, :global_variable_or_write_node, :global_variable_operator_write_node,
+             :instance_variable_write_node, :instance_variable_and_write_node, :instance_variable_or_write_node, :instance_variable_operator_write_node,
+             :local_variable_write_node, :local_variable_and_write_node, :local_variable_or_write_node, :local_variable_operator_write_node,
+             :multi_write_node
+          return true
+        when :class_node, :module_node, :singleton_class_node
+          return false
+        else
+          queue.concat(node.compact_child_nodes)
+        end
+      end
+
+      false
+    end
+  end
+
   class AliasGlobalVariableNode
     # Represents the use of the `alias` keyword to alias a global variable.
     #
@@ -1610,11 +1636,18 @@ module Prism
           q.text(" : ")
           q.format(consequent.statements.body.first)
         end
-      elsif !statements
+      elsif statements.nil? || predicate.contains_write?
         q.group do
           q.loc(if_keyword_loc)
           q.text(" ")
           q.nest(3) { q.format(predicate) }
+
+          if statements
+            q.indent do
+              q.breakable_force
+              q.format(statements)
+            end
+          end
 
           if consequent
             q.breakable_force
@@ -2995,14 +3028,16 @@ module Prism
       statements = self.statements
       consequent = self.consequent
 
-      if !statements || consequent
+      if !statements || consequent || predicate.contains_write?
         q.group do
           q.text("unless ")
           q.nest(3) { q.format(predicate) }
 
           if statements
-            q.breakable_force
-            q.format(statements)
+            q.indent do
+              q.breakable_force
+              q.format(statements)
+            end
           end
 
           if consequent
@@ -3022,8 +3057,10 @@ module Prism
                 q.nest(3) { q.format(predicate) }
               end
 
-              q.breakable_space
-              q.format(statements)
+              q.indent do
+                q.breakable_space
+                q.format(statements)
+              end
 
               if consequent
                 q.breakable_space
@@ -3053,9 +3090,9 @@ module Prism
     #     until foo do bar end
     #     ^^^^^^^^^^^^^^^^^^^^
     def format(q)
-      if begin_modifier?
+      if begin_modifier? || statements&.contains_write?
         q.group { format_flat(q) }
-      elsif !statements || keyword_loc.comments.any? || closing_loc&.comments&.any?
+      elsif statements.nil? || keyword_loc.comments.any? || closing_loc&.comments&.any? || predicate.contains_write?
         q.group do
           format_break(q)
           q.break_parent
@@ -3121,13 +3158,13 @@ module Prism
     #     while foo do bar end
     #     ^^^^^^^^^^^^^^^^^^^^
     def format(q)
-      if begin_modifier?
+      if begin_modifier? || statements&.contains_write?
         q.group do
           q.format(statements)
           q.text(" while ")
           q.format(predicate)
         end
-      elsif !statements || keyword_loc.comments.any? || closing_loc&.comments&.any?
+      elsif statements.nil? || keyword_loc.comments.any? || closing_loc&.comments&.any? || predicate.contains_write?
         q.group do
           q.loc(keyword_loc)
           q.text(" ")
@@ -3179,6 +3216,8 @@ module Prism
     #     yield foo
     #     ^^^^^^^^^
     def format(q)
+      arguments = self.arguments
+
       if arguments.nil?
         q.text("yield")
       else
