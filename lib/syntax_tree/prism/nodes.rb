@@ -497,6 +497,7 @@ module Prism
     #       foo&.bar
     #       ^^^^^^^^
     def format(q)
+      call_operator = self.call_operator
       message = self.message
       name = self.name
 
@@ -635,7 +636,7 @@ module Prism
           q.nest(0) do
             if receiver
               q.format(receiver)
-              q.text(call_operator == "&." ? "&." : ".")
+              q.text(call_operator == "&." ? "&." : ".") if call_operator
             end
 
             q.text(message) if message
@@ -698,11 +699,13 @@ module Prism
     #     foo.bar &&= value
     #     ^^^^^^^^^^^^^^^^^
     def format(q)
+      call_operator = self.call_operator
+
       q.format_write(operator_loc, value) do
         q.group do
           if receiver
             q.format(receiver)
-            q.text(call_operator == "&." ? "&." : ".")
+            q.text(call_operator == "&." ? "&." : ".") if call_operator
           end
 
           q.text(message)
@@ -717,11 +720,13 @@ module Prism
     #     foo.bar ||= value
     #     ^^^^^^^^^^^^^^^^^
     def format(q)
+      call_operator = self.call_operator
+
       q.format_write(operator_loc, value) do
         q.group do
           if receiver
             q.format(receiver)
-            q.text(call_operator == "&." ? "&." : ".")
+            q.text(call_operator == "&." ? "&." : ".") if call_operator
           end
 
           q.text(message)
@@ -736,11 +741,13 @@ module Prism
     #     foo.bar += baz
     #     ^^^^^^^^^^^^^^
     def format(q)
+      call_operator = self.call_operator
+
       q.format_write(operator_loc, value) do
         q.group do
           if receiver
             q.format(receiver)
-            q.text(call_operator == "&." ? "&." : ".")
+            q.text(call_operator == "&." ? "&." : ".") if call_operator
           end
 
           q.text(message)
@@ -3172,7 +3179,34 @@ module Prism
     #     yield foo
     #     ^^^^^^^^^
     def format(q)
-      q.format_jump("yield", arguments)
+      if arguments.nil?
+        q.text("yield")
+      else
+        lparen_loc = self.lparen_loc
+        rparen_loc = self.rparen_loc
+
+        q.group do
+          q.text("yield")
+
+          if lparen_loc
+            q.loc(lparen_loc)
+          else
+            q.if_break { q.text("(") }.if_flat { q.text(" ") }
+          end
+
+          q.indent do
+            q.breakable_empty
+            q.format(arguments)
+          end
+          q.breakable_empty
+
+          if rparen_loc
+            q.loc(rparen_loc)
+          else
+            q.if_break { q.text(")") }
+          end
+        end
+      end
     end
   end
 end

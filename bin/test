@@ -49,7 +49,6 @@ END {
 }
 
 __END__
-aref_field.rb:4
 assoc.rb:1
 assoc.rb:8
 bare_assoc_hash.rb:4
@@ -140,7 +139,3 @@ while.rb:3
 while.rb:4
 while.rb:5
 while_mod.rb:3
-yield.rb:1
-yield.rb:3
-yield.rb:5
-yield.rb:6
