@@ -14,12 +14,6 @@ module Prism
     end
   end
 
-  class Node
-    def comments
-      location.comments
-    end
-  end
-
   class Format < PrettierPrint
     COMMENT_PRIORITY = 1
     HEREDOC_PRIORITY = 2
@@ -60,7 +54,7 @@ module Prism
 
         if new_name.is_a?(SymbolNode)
           text(new_name.value)
-          new_name.comments.each { |comment| visit_comment(comment) }
+          new_name.location.comments.each { |comment| visit_comment(comment) }
         else
           visit(new_name)
         end
@@ -129,7 +123,7 @@ module Prism
       # into a %w or %i array.
       closing_loc = node.closing_loc
       if opening_loc.comments.empty? && closing_loc.comments.empty? && elements.length >= 2
-        if elements.all? { |element| element.is_a?(StringNode) && element.comments.empty? && !element.content.match?(/[\s\[\]\\]/) }
+        if elements.all? { |element| element.is_a?(StringNode) && element.location.comments.empty? && !element.content.match?(/[\s\[\]\\]/) }
           group do
             text("%w[")
             indent do
@@ -140,7 +134,7 @@ module Prism
             text("]")
           end
           return
-        elsif elements.all? { |element| element.is_a?(SymbolNode) && element.comments.empty? }
+        elsif elements.all? { |element| element.is_a?(SymbolNode) && element.location.comments.empty? }
           group do
             text("%i[")
             indent do
@@ -1400,9 +1394,7 @@ module Prism
 
     # def foo(...); end
     #         ^^^
-    def visit_forwarding_parameter_node(node)
-      text("...")
-    end
+    alias visit_forwarding_parameter_node visit_forwarding_arguments_node
 
     # super
     # ^^^^^
@@ -2084,7 +2076,7 @@ module Prism
     # if /foo/ then end
     #    ^^^^^
     def visit_match_last_line_node(node)
-      visit_regular_expression_node_parts(node, [bare_string(node.content_loc, node.location)])
+      visit_regular_expression_node_parts(node, [bare_string(node, node.content_loc, node.location)])
     end
 
     # foo in bar
@@ -2138,10 +2130,8 @@ module Prism
     end
 
     # A node that is missing from the syntax tree. This is only used in the
-    # case of a syntax error. The parser gem doesn't have such a concept, so
-    # we invent our own here.
+    # case of a syntax error. We'll format it as empty.
     def visit_missing_node(node)
-      raise "Visiting MissingNode is not supported."
     end
 
     # module Foo; end
@@ -2395,7 +2385,7 @@ module Prism
     # The top-level program node.
     def visit_program_node(node)
       visit(node.statements)
-      seplist(node.comments, -> { breakable_force }) do |comment|
+      seplist(node.location.comments, -> { breakable_force }) do |comment|
         text(comment.location.slice.rstrip)
       end
       breakable_force
@@ -2429,7 +2419,7 @@ module Prism
     # /foo/
     # ^^^^^
     def visit_regular_expression_node(node)
-      visit_regular_expression_node_parts(node, [bare_string(node.content_loc, node.location)])
+      visit_regular_expression_node_parts(node, [bare_string(node, node.content_loc, node.location)])
     end
 
     # def foo(bar:); end
@@ -2741,7 +2731,7 @@ module Prism
             if name.is_a?(SymbolNode)
               text(name.value)
 
-              if (comment = name.comments.first)
+              if (comment = name.location.comments.first)
                 visit_comment(comment)
               end
             else
@@ -3033,8 +3023,8 @@ module Prism
     # There are times when it is useful to create string nodes so that
     # non-interpolated nodes can be formatted as if they were their interpolated
     # counterparts with a single part.
-    def bare_string(content_loc, location)
-      StringNode.new(0, nil, content_loc, nil, nil, location)
+    def bare_string(node, content_loc, location)
+      StringNode.new(node.send(:source), 0, nil, content_loc, nil, nil, location)
     end
 
     # True if the given node contains a conditional expression.
@@ -3179,36 +3169,22 @@ module Prism
     # it that are attached to its location.
     def visit(node)
       stack << node
-      doc = nil
 
-      # If there are comments, then we're going to format them around the node
-      # so that they get printed properly.
-      node_location = node.location
-      if (comments = node_location.comments).any?
-        trailing = []
-        last_leading = nil
-
-        comments.each do |comment|
-          if comment.location.start_offset < node_location.start_offset
-            if comment.is_a?(InlineComment)
-              text(comment.location.slice)
-              breakable(force: true)
-            else
-              breakable_force
-              trim
-              text(comment.location.slice.rstrip)
-            end
-
-            last_leading = comment
-          else
-            trailing << comment
-          end
+      node.location.leading_comments.each do |comment|
+        if comment.is_a?(InlineComment)
+          text(comment.location.slice)
+          breakable(force: true)
+        else
+          breakable_force
+          trim
+          text(comment.location.slice.rstrip)
         end
+      end
 
-        doc = node.accept(self)
-        trailing.each { |comment| visit_comment(comment) }
-      else
-        doc = node.accept(self)
+      doc = node.accept(self)
+
+      node.location.trailing_comments.each do |comment|
+        visit_comment(comment)
       end
 
       stack.pop
@@ -3252,18 +3228,22 @@ module Prism
       end
     end
 
-    # Visit a comment and print it out as a line suffix.
+    # Visit a comment and print it out.
     def visit_comment(comment)
-      if comment.is_a?(InlineComment)
+      if !comment.is_a?(InlineComment)
+        breakable_force
+        trim
+        text(comment.location.slice.rstrip)
+      elsif comment.trailing?
         line_suffix(priority: COMMENT_PRIORITY) do
-          comment.trailing? ? text(" ") : breakable
+          text(" ")
           text(comment.location.slice)
           break_parent
         end
       else
-        breakable_force
-        trim
-        text(comment.location.slice.rstrip)
+        breakable
+        text(comment.location.slice)
+        break_parent
       end
     end
 
