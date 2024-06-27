@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "prettier_print"
+require_relative "prism/prettier_print"
 require "prism"
 
 module Prism
@@ -2996,7 +2996,7 @@ module Prism
     # up expensive computation time.
     def group
       contents = []
-      doc = Group.new(0, contents: contents)
+      doc = Group.new(contents: contents)
 
       groups << doc
       target << doc
