@@ -365,9 +365,8 @@ class PrettierPrint
   #
   # The block is used to generate spaces. ->(n) { ' ' * n } is used if it is not
   # given.
-  def initialize(output = "".dup, maxwidth = 80)
-    @output = output
-    @buffer = Buffer.for(output)
+  def initialize(buffer = [], maxwidth = 80)
+    @buffer = buffer
     @maxwidth = maxwidth
     reset
   end
@@ -465,7 +464,7 @@ class PrettierPrint
           buffer << "\n"
           position = 0
         else
-          position -= buffer.trim!
+          position -= trim!(buffer)
           buffer << "\n"
           buffer << " " * indent
           position = indent
@@ -477,7 +476,7 @@ class PrettierPrint
         next_indent = indent + doc.indent
         commands += doc.contents.reverse.map { |part| [next_indent, mode, part] }
       when :trim
-        position -= buffer.trim!
+        position -= trim!(buffer)
       when :if_break
         if mode == MODE_BREAK && doc.break_contents.any?
           commands += doc.break_contents.reverse.map { |part| [indent, mode, part] }
@@ -872,6 +871,25 @@ class PrettierPrint
 
   private
 
+  def trim!(buffer)
+    return 0 if buffer.empty?
+
+    trimmed = 0
+
+    while buffer.any? && buffer.last.is_a?(String) &&
+        buffer.last.match?(/\A[\t ]*\z/)
+      trimmed += buffer.pop.length
+    end
+
+    if buffer.any? && buffer.last.is_a?(String) && !buffer.last.frozen?
+      length = buffer.last.length
+      buffer.last.gsub!(/[\t ]*\z/, "")
+      trimmed += length - buffer.last.length
+    end
+
+    trimmed
+  end
+
   # This method returns a boolean as to whether or not the remaining commands
   # fit onto the remaining space on the current line. If we finish printing
   # all of the commands or if we hit a newline, then we return true. Otherwise
@@ -924,7 +942,7 @@ class PrettierPrint
         next_indent = indent + doc.indent
         commands += doc.contents.reverse.map { |part| [next_indent, mode, part] }
       when :trim
-        remaining += fit_buffer.trim!
+        remaining += trim!(fit_buffer)
       when :if_break
         if mode == MODE_BREAK && doc.break_contents.any?
           commands += doc.break_contents.reverse.map { |part| [indent, mode, part] }

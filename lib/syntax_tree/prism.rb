@@ -3635,7 +3635,7 @@ module Prism
 
       root.accept(formatter)
       formatter.flush
-      formatter.output.join
+      formatter.buffer.join
     end
   end
 end
