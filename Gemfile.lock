@@ -9,13 +9,14 @@ GEM
   remote: https://rubygems.org/
   specs:
     prettier_print (1.2.1)
-    prism (0.24.0)
+    prism (0.30.0)
 
 PLATFORMS
   arm64-darwin-22
   arm64-darwin-23
 
 DEPENDENCIES
+  prism
   syntax_tree-prism!
 
 BUNDLED WITH

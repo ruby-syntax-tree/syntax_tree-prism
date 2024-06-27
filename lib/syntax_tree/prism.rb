@@ -4,16 +4,6 @@ require "prettier_print"
 require "prism"
 
 module Prism
-  class Location
-    def leading_comments
-      comments.select { |comment| comment.location.start_offset < start_offset }
-    end
-
-    def trailing_comments
-      comments.select { |comment| comment.location.start_offset > start_offset }
-    end
-  end
-
   class Format < PrettierPrint
     COMMENT_PRIORITY = 1
     HEREDOC_PRIORITY = 2
