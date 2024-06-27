@@ -3264,7 +3264,7 @@ module Prism
     def visit_heredoc(node, parts)
       # This is a very specific behavior where you want to force a newline, but
       # don't want to force the break parent.
-      separator = PrettierPrint::Breakable.new(" ", 1, indent: false, force: true)
+      separator = PrettierPrint::Breakable.new(" ", 1, true, false)
       opening = node.opening
 
       # If the heredoc is indented, then we're going to need to reintroduce the

@@ -83,8 +83,8 @@ class PrettierPrint
     def initialize(
       separator = " ",
       width = separator.length,
-      force: false,
-      indent: true
+      force = false,
+      indent = true
     )
       @separator = separator
       @width = width
@@ -107,10 +107,10 @@ class PrettierPrint
 
   # Below here are the most common combination of options that are created when
   # creating new breakables. They are here to cut down on some allocations.
-  BREAKABLE_SPACE = Breakable.new(" ", 1, indent: true, force: false).freeze
-  BREAKABLE_EMPTY = Breakable.new("", 0, indent: true, force: false).freeze
-  BREAKABLE_FORCE = Breakable.new(" ", 1, indent: true, force: true).freeze
-  BREAKABLE_RETURN = Breakable.new(" ", 1, indent: false, force: true).freeze
+  BREAKABLE_SPACE = Breakable.new(" ", 1, false, true).freeze
+  BREAKABLE_EMPTY = Breakable.new("", 0, false, true).freeze
+  BREAKABLE_FORCE = Breakable.new(" ", 1, true, true).freeze
+  BREAKABLE_RETURN = Breakable.new(" ", 1, true, false).freeze
 
   # A node in the print tree that forces the surrounding group to print out in
   # the "break" mode as opposed to the "flat" mode. Useful for when you need to
@@ -688,7 +688,7 @@ class PrettierPrint
     indent: true,
     force: false
   )
-    target << Breakable.new(separator, width, indent: indent, force: !!force)
+    target << Breakable.new(separator, width, !!force, indent)
     break_parent if force == true
   end
 
