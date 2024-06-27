@@ -276,13 +276,6 @@ class PrettierPrint
   # default is \n.
   DEFAULT_NEWLINE = "\n"
 
-  # When generating spaces after a newline for indentation, by default we
-  # generate one space per character needed for indentation. You can change this
-  # behavior (for instance to use tabs) by passing a different genspace
-  # procedure.
-  DEFAULT_GENSPACE = ->(n) { " " * n }
-  Ractor.make_shareable(DEFAULT_GENSPACE) if defined?(Ractor)
-
   # There are two modes in printing, break and flat. When we're in break mode,
   # any lines will use their newline, any if-breaks will use their break
   # contents, etc.
@@ -301,7 +294,7 @@ class PrettierPrint
   # This is a convenience method which is same as follows:
   #
   #   begin
-  #     q = PrettierPrint.new(output, maxwidth, newline, &genspace)
+  #     q = PrettierPrint.new(output, maxwidth, newline)
   #     ...
   #     q.flush
   #     output
@@ -311,10 +304,9 @@ class PrettierPrint
     output = "".dup,
     maxwidth = 80,
     newline = DEFAULT_NEWLINE,
-    genspace = DEFAULT_GENSPACE,
     indentation = DEFAULT_INDENTATION
   )
-    q = new(output, maxwidth, newline, &genspace)
+    q = new(output, maxwidth, newline)
     yield q
     q.flush(indentation)
     output
@@ -342,12 +334,6 @@ class PrettierPrint
   # This defaults to "\n", and should be String
   attr_reader :newline
 
-  # An object that responds to call that takes one argument, of an Integer, and
-  # returns the corresponding number of spaces.
-  #
-  # By default this is: ->(n) { ' ' * n }
-  attr_reader :genspace
-
   # The stack of groups that are being printed.
   attr_reader :groups
 
@@ -374,14 +360,12 @@ class PrettierPrint
   def initialize(
     output = "".dup,
     maxwidth = 80,
-    newline = DEFAULT_NEWLINE,
-    &genspace
+    newline = DEFAULT_NEWLINE
   )
     @output = output
     @buffer = Buffer.for(output)
     @maxwidth = maxwidth
     @newline = newline
-    @genspace = genspace || DEFAULT_GENSPACE
     reset
   end
 
@@ -429,7 +413,7 @@ class PrettierPrint
     position = base_indentation
 
     # Start the buffer with the base indentation level.
-    buffer << genspace.call(base_indentation) if base_indentation > 0
+    buffer << " " * base_indentation if base_indentation > 0
 
     # This is our command stack. A command consists of a triplet of an
     # indentation level, the mode (break or flat), and a doc node.
@@ -513,7 +497,7 @@ class PrettierPrint
         else
           position -= buffer.trim!
           buffer << newline
-          buffer << genspace.call(indent)
+          buffer << " " * indent
           position = indent
         end
       when Indent
