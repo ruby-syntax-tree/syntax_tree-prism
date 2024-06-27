@@ -173,7 +173,7 @@ class PrettierPrint
   class Indent
     attr_reader :contents
 
-    def initialize(contents: [])
+    def initialize(contents)
       @contents = contents
     end
 
@@ -824,7 +824,7 @@ class PrettierPrint
   # node are determined by the block.
   def indent
     contents = []
-    doc = Indent.new(contents: contents)
+    doc = Indent.new(contents)
     target << doc
 
     with_target(contents) { yield }
