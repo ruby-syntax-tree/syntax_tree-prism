@@ -158,7 +158,7 @@ class PrettierPrint
   class IfBreak
     attr_reader :break_contents, :flat_contents
 
-    def initialize(break_contents: [], flat_contents: [])
+    def initialize(break_contents, flat_contents)
       @break_contents = break_contents
       @flat_contents = flat_contents
     end
@@ -787,7 +787,7 @@ class PrettierPrint
     break_contents = []
     flat_contents = []
 
-    doc = IfBreak.new(break_contents: break_contents, flat_contents: flat_contents)
+    doc = IfBreak.new(break_contents, flat_contents)
     target << doc
 
     with_target(break_contents) { yield }
@@ -811,7 +811,7 @@ class PrettierPrint
       break_parent if group.break?
     else
       flat_contents = []
-      doc = IfBreak.new(break_contents: [], flat_contents: flat_contents)
+      doc = IfBreak.new(break_contents, flat_contents)
       target << doc
 
       with_target(flat_contents) { yield }
