@@ -271,11 +271,6 @@ class PrettierPrint
     end
   end
 
-  # When printing, you can optionally specify the value that should be used
-  # whenever a group needs to be broken onto multiple lines. In this case the
-  # default is \n.
-  DEFAULT_NEWLINE = "\n"
-
   # There are two modes in printing, break and flat. When we're in break mode,
   # any lines will use their newline, any if-breaks will use their break
   # contents, etc.
@@ -303,10 +298,9 @@ class PrettierPrint
   def self.format(
     output = "".dup,
     maxwidth = 80,
-    newline = DEFAULT_NEWLINE,
     indentation = DEFAULT_INDENTATION
   )
-    q = new(output, maxwidth, newline)
+    q = new(output, maxwidth)
     yield q
     q.flush(indentation)
     output
@@ -329,11 +323,6 @@ class PrettierPrint
   # This defaults to 80, and should be an Integer
   attr_reader :maxwidth
 
-  # The value that is appended to +output+ to add a new line.
-  #
-  # This defaults to "\n", and should be String
-  attr_reader :newline
-
   # The stack of groups that are being printed.
   attr_reader :groups
 
@@ -346,26 +335,18 @@ class PrettierPrint
   # +output+ is an output target. If it is not specified, '' is assumed. It
   # should have a << method which accepts the first argument +obj+ of
   # PrettierPrint#text, the first argument +separator+ of PrettierPrint#breakable,
-  # the first argument +newline+ of PrettierPrint.new, and the result of a given
-  # block for PrettierPrint.new.
+  # and the result of a given block for PrettierPrint.new.
   #
   # +maxwidth+ specifies maximum line length. If it is not specified, 80 is
   # assumed. However actual outputs may overflow +maxwidth+ if long
   # non-breakable texts are provided.
   #
-  # +newline+ is used for line breaks. "\n" is used if it is not specified.
-  #
   # The block is used to generate spaces. ->(n) { ' ' * n } is used if it is not
   # given.
-  def initialize(
-    output = "".dup,
-    maxwidth = 80,
-    newline = DEFAULT_NEWLINE
-  )
+  def initialize(output = "".dup, maxwidth = 80)
     @output = output
     @buffer = Buffer.for(output)
     @maxwidth = maxwidth
-    @newline = newline
     reset
   end
 
@@ -378,16 +359,12 @@ class PrettierPrint
   #   => #<PrettierPrint:0x0>
   #   q.group {
   #     q.text q.current_group.inspect
-  #     q.text q.newline
   #     q.group(q.current_group.depth + 1) {
   #       q.text q.current_group.inspect
-  #       q.text q.newline
   #       q.group(q.current_group.depth + 1) {
   #         q.text q.current_group.inspect
-  #         q.text q.newline
   #         q.group(q.current_group.depth + 1) {
   #           q.text q.current_group.inspect
-  #           q.text q.newline
   #         }
   #       }
   #     }
@@ -492,11 +469,11 @@ class PrettierPrint
         end
 
         if !doc.indent?
-          buffer << newline
+          buffer << "\n"
           position = 0
         else
           position -= buffer.trim!
-          buffer << newline
+          buffer << "\n"
           buffer << " " * indent
           position = indent
         end
