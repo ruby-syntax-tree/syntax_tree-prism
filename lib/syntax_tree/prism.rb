@@ -440,7 +440,7 @@ module Prism
       text(break_opening)
       node.opening_loc.comments.each { |comment| visit_comment(comment) }
 
-      if parameters.is_a?(ParametersNode)
+      if parameters.is_a?(BlockParametersNode)
         text(" ")
         visit(parameters)
       end
@@ -2004,7 +2004,7 @@ module Prism
 
       group do
         text("->")
-        visit(parameters) if parameters.is_a?(ParametersNode)
+        visit(parameters) if parameters.is_a?(BlockParametersNode)
 
         if body || closing_comments.any?
           text(" ")
