@@ -1220,7 +1220,7 @@ module Prism
             # visit_location.
             rparen_loc&.comments&.each do |comment|
               if comment.is_a?(InlineComment)
-                line_suffix(priority: COMMENT_PRIORITY) do
+                line_suffix(COMMENT_PRIORITY) do
                   comment.trailing? ? text(" ") : breakable
                   text(comment.location.slice)
                 end
@@ -3215,7 +3215,7 @@ module Prism
         trim
         text(comment.location.slice.rstrip)
       elsif comment.trailing?
-        line_suffix(priority: COMMENT_PRIORITY) do
+        line_suffix(COMMENT_PRIORITY) do
           text(" ")
           text(comment.location.slice)
           break_parent
@@ -3281,7 +3281,7 @@ module Prism
 
       group do
         text(opening)
-        line_suffix(priority: HEREDOC_PRIORITY) do
+        line_suffix(HEREDOC_PRIORITY) do
           group do
             target << separator
 

@@ -833,7 +833,7 @@ class PrettierPrint
 
   # Inserts a LineSuffix node into the print tree. The contents of the node are
   # determined by the block.
-  def line_suffix(priority: LineSuffix::DEFAULT_PRIORITY)
+  def line_suffix(priority)
     contents = []
     doc = LineSuffix.new(priority, contents)
     target << doc
