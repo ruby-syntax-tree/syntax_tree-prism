@@ -3431,25 +3431,19 @@ module Prism
     # Print out a slice of the given location, and handle any attached trailing
     # comments that may be present.
     def visit_location(location, value = location.slice)
-      trailing = []
-
-      location.comments.each do |comment|
-        if comment.location.start_offset < location.start_offset
-          if comment.is_a?(InlineComment)
-            text(comment.location.slice)
-          else
-            breakable_force
-            trim
-            text(comment.location.slice.rstrip)
-          end
-          breakable_force
+      location.leading_comments.each do |comment|
+        if comment.is_a?(InlineComment)
+          text(comment.location.slice)
         else
-          trailing << comment
+          breakable_force
+          trim
+          text(comment.location.slice.rstrip)
         end
+        breakable_force
       end
 
       text(value)
-      trailing.each { |comment| visit_comment(comment) }
+      location.trailing_comments.each { |comment| visit_comment(comment) }
     end
 
     # Visit a prefix expression, which consists of a single operator prefixing

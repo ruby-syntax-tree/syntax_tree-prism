@@ -299,7 +299,9 @@ class PrettierPrint
   def initialize(buffer = [], maxwidth = 80)
     @buffer = buffer
     @maxwidth = maxwidth
-    reset
+    contents = []
+    @groups = [Group.new(contents)]
+    @target = contents
   end
 
   # Flushes all of the generated print tree onto the output buffer, then clears
@@ -431,16 +433,12 @@ class PrettierPrint
 
       if commands.empty? && line_suffixes.any?
         line_suffixes.sort_by(&line_suffix_sort).each do |(indent, mode, doc)|
-          commands += doc.contents.reverse.map { |part| [indent, mode, part] }
+          commands.concat doc.contents.reverse.map { |part| [indent, mode, part] }
         end
 
         line_suffixes.clear
       end
     end
-
-    # Reset the group stack and target array so that this pretty printer object
-    # can continue to be used before calling flush again if desired.
-    reset
   end
 
   # ----------------------------------------------------------------------------
@@ -884,14 +882,6 @@ class PrettierPrint
     end
 
     false
-  end
-
-  # Resets the group stack and target array so that this pretty printer object
-  # can continue to be used before calling flush again if desired.
-  def reset
-    contents = []
-    @groups = [Group.new(contents)]
-    @target = contents
   end
 
   def remove_breaks_with(doc, replace)
