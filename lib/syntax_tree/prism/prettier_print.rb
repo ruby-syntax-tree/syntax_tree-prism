@@ -224,75 +224,6 @@ class PrettierPrint
   # cut down on allocations.
   TRIM = Trim.new.freeze
 
-  # When building up the contents in the output buffer, it's convenient to be
-  # able to trim trailing whitespace before newlines. If the output object is a
-  # string or array or strings, then we can do this with some gsub calls. If
-  # not, then this effectively just wraps the output object and forwards on
-  # calls to <<.
-  module Buffer
-    # This is an output buffer that wraps a string output object. It provides a
-    # trim! method that trims off trailing whitespace from the string using
-    # gsub!.
-    class StringBuffer
-      attr_reader :output
-
-      def initialize(output = "".dup)
-        @output = output
-      end
-
-      def <<(object)
-        @output << object
-      end
-
-      def trim!
-        length = output.length
-        output.gsub!(/[\t ]*\z/, "")
-        length - output.length
-      end
-    end
-
-    # This is an output buffer that wraps an array output object. It provides a
-    # trim! method that trims off trailing whitespace from the last element in
-    # the array if it's an unfrozen string using the same method as the
-    # StringBuffer.
-    class ArrayBuffer
-      attr_reader :output
-
-      def initialize(output = [])
-        @output = output
-      end
-
-      def <<(object)
-        @output << object
-      end
-
-      def trim!
-        return 0 if output.empty?
-
-        trimmed = 0
-
-        while output.any? && output.last.is_a?(String) &&
-                output.last.match?(/\A[\t ]*\z/)
-          trimmed += output.pop.length
-        end
-
-        if output.any? && output.last.is_a?(String) && !output.last.frozen?
-          length = output.last.length
-          output.last.gsub!(/[\t ]*\z/, "")
-          trimmed += length - output.last.length
-        end
-
-        trimmed
-      end
-    end
-
-    # This is a switch for building the correct output buffer wrapper class for
-    # the given output object.
-    def self.for(output)
-      output.is_a?(String) ? StringBuffer.new(output) : ArrayBuffer.new(output)
-    end
-  end
-
   # There are two modes in printing, break and flat. When we're in break mode,
   # any lines will use their newline, any if-breaks will use their break
   # contents, etc.
@@ -907,7 +838,7 @@ class PrettierPrint
     # This is our output buffer, really only necessary to keep track of
     # because we could encounter a Trim doc node that would actually add
     # remaining space.
-    fit_buffer = buffer.class.new
+    fit_buffer = []
 
     while remaining >= 0
       if commands.empty?
