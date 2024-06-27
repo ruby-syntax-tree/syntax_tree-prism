@@ -623,7 +623,8 @@ class PrettierPrint
   #   xxx 3
   def seplist(list, sep = nil) # :yield: element
     first = true
-    list.each {|*v|
+
+    list.each do |v|
       if first
         first = false
       elsif sep
@@ -631,8 +632,9 @@ class PrettierPrint
       else
         comma_breakable
       end
-      RUBY_VERSION >= "3.0" ? yield(*v, **{}) : yield(*v)
-    }
+
+      yield(v)
+    end
   end
 
   # ----------------------------------------------------------------------------
