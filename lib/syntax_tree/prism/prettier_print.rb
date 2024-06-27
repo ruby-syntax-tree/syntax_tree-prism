@@ -350,35 +350,6 @@ class PrettierPrint
     reset
   end
 
-  # Returns the group most recently added to the stack.
-  #
-  # Contrived example:
-  #   out = ""
-  #   => ""
-  #   q = PrettierPrint.new(out)
-  #   => #<PrettierPrint:0x0>
-  #   q.group {
-  #     q.text q.current_group.inspect
-  #     q.group(q.current_group.depth + 1) {
-  #       q.text q.current_group.inspect
-  #       q.group(q.current_group.depth + 1) {
-  #         q.text q.current_group.inspect
-  #         q.group(q.current_group.depth + 1) {
-  #           q.text q.current_group.inspect
-  #         }
-  #       }
-  #     }
-  #   }
-  #   => 284
-  #    puts out
-  #   #<PrettierPrint::Group:0x0 @depth=1>
-  #   #<PrettierPrint::Group:0x0 @depth=2>
-  #   #<PrettierPrint::Group:0x0 @depth=3>
-  #   #<PrettierPrint::Group:0x0 @depth=4>
-  def current_group
-    groups.last
-  end
-
   # Flushes all of the generated print tree onto the output buffer, then clears
   # the generated tree from memory.
   def flush(base_indentation = DEFAULT_INDENTATION)
