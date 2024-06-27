@@ -193,7 +193,7 @@ class PrettierPrint
 
     attr_reader :priority, :contents
 
-    def initialize(priority: DEFAULT_PRIORITY, contents: [])
+    def initialize(priority, contents)
       @priority = priority
       @contents = contents
     end
@@ -834,10 +834,11 @@ class PrettierPrint
   # Inserts a LineSuffix node into the print tree. The contents of the node are
   # determined by the block.
   def line_suffix(priority: LineSuffix::DEFAULT_PRIORITY)
-    doc = LineSuffix.new(priority: priority)
+    contents = []
+    doc = LineSuffix.new(priority, contents)
     target << doc
 
-    with_target(doc.contents) { yield }
+    with_target(contents) { yield }
     doc
   end
 
