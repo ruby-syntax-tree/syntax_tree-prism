@@ -418,7 +418,7 @@ module Prism
           if_break { visit_block_node_break(node, break_opening, break_closing) }.if_flat do
             text(flat_opening)
 
-            if parameters.is_a?(ParametersNode)
+            if parameters.is_a?(BlockParametersNode)
               text(" ")
               visit(parameters)
             end
@@ -1945,6 +1945,12 @@ module Prism
           text(node.closing)
         end
       end
+    end
+
+    # it
+    # ^^
+    def visit_it_local_variable_read_node(node)
+      text("it")
     end
 
     # foo(bar: baz)
