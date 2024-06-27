@@ -2988,31 +2988,6 @@ module Prism
     private
 
     ############################################################################
-    # Doc builder methods                                                      #
-    ############################################################################
-
-    # This is a simplified version of prettyprint's group. It doesn't provide
-    # any of the more advanced options because we don't need them and they take
-    # up expensive computation time.
-    def group
-      contents = []
-      doc = Group.new(contents: contents)
-
-      groups << doc
-      target << doc
-
-      with_target(contents) { yield }
-      groups.pop
-      doc
-    end
-
-    # This is a much simplified version of prettier_print's text. It avoids
-    # calculating width by pushing the string directly onto the target.
-    def text(string)
-      target << string
-    end
-
-    ############################################################################
     # Helper methods                                                           #
     ############################################################################
 
@@ -3178,7 +3153,7 @@ module Prism
       node.location.leading_comments.each do |comment|
         if comment.is_a?(InlineComment)
           text(comment.location.slice)
-          breakable(force: true)
+          breakable_force
         else
           breakable_force
           trim
@@ -3467,7 +3442,7 @@ module Prism
             trim
             text(comment.location.slice.rstrip)
           end
-          breakable(force: true)
+          breakable_force
         else
           trailing << comment
         end

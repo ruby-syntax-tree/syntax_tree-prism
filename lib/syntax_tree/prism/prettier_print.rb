@@ -65,7 +65,7 @@ class PrettierPrint
   class Align
     attr_reader :indent, :contents
 
-    def initialize(indent:, contents: [])
+    def initialize(indent, contents)
       @indent = indent
       @contents = contents
     end
@@ -123,7 +123,7 @@ class PrettierPrint
   class Group
     attr_reader :contents
 
-    def initialize(contents: [])
+    def initialize(contents = [])
       @contents = contents
       @break = false
     end
@@ -709,14 +709,13 @@ class PrettierPrint
   # called before grouping. If +close_object+ is specified,
   # <tt>text(close_object, close_width)</tt> is called after grouping.
   def group
-    doc = Group.new
+    contents = []
+    doc = Group.new(contents)
+
     groups << doc
     target << doc
 
-    with_target(doc.contents) do
-      yield
-    end
-
+    with_target(contents) { yield }
     groups.pop
 
     doc
@@ -751,7 +750,7 @@ class PrettierPrint
 
     def if_flat
       contents = []
-      group = Group.new(contents: contents)
+      group = Group.new(contents)
 
       q.with_target(contents) { yield }
       q.break_parent if group.break?
@@ -789,7 +788,7 @@ class PrettierPrint
   def if_flat
     if groups.last.break?
       contents = []
-      group = Group.new(0, contents: contents)
+      group = Group.new(contents)
 
       with_target(contents) { yield }
       break_parent if group.break?
@@ -829,26 +828,16 @@ class PrettierPrint
   # the block.
   def nest(indent)
     contents = []
-    doc = Align.new(indent: indent, contents: contents)
+    doc = Align.new(indent, contents)
     target << doc
 
     with_target(contents) { yield }
     doc
   end
 
-  # This adds +object+ as a text of +width+ columns in width.
-  #
-  # If +width+ is not specified, object.length is used.
-  def text(object = "", width = object.length)
-    doc = target.last
-
-    unless doc.is_a?(Text)
-      doc = Text.new
-      target << doc
-    end
-
-    doc.add(object: object, width: width)
-    doc
+  # Push a value onto the output target.
+  def text(value)
+    target << value
   end
 
   # ----------------------------------------------------------------------------
@@ -937,7 +926,7 @@ class PrettierPrint
   # can continue to be used before calling flush again if desired.
   def reset
     contents = []
-    @groups = [Group.new(contents: contents)]
+    @groups = [Group.new(contents)]
     @target = contents
   end
 
@@ -948,7 +937,7 @@ class PrettierPrint
       text.add(object: doc.force? ? replace : doc.separator, width: doc.width)
       text
     when IfBreak
-      Align.new(indent: 0, contents: doc.flat_contents)
+      Align.new(0, doc.flat_contents)
     else
       doc
     end
