@@ -203,26 +203,6 @@ class PrettierPrint
     end
   end
 
-  # A node in the print tree that represents plain content that cannot be broken
-  # up (by default this assumes strings, but it can really be anything).
-  class Text
-    attr_reader :objects, :width
-
-    def initialize
-      @objects = []
-      @width = 0
-    end
-
-    def add(object: "", width: object.length)
-      @objects << object
-      @width += width
-    end
-
-    def type
-      :text
-    end
-  end
-
   # A node in the print tree that represents trimming all of the indentation of
   # the current line, in the rare case that you need to ignore the indentation
   # that you've already created. This node should be placed after a Breakable.
@@ -508,9 +488,6 @@ class PrettierPrint
         line_suffixes << [indent, mode, doc]
       when :break_parent
         # do nothing
-      when :text
-        doc.objects.each { |object| buffer << object }
-        position += doc.width
       else
         # Special case where the user has defined some way to get an extra doc
         # node that we don't explicitly support into the list. In this case
@@ -614,8 +591,6 @@ class PrettierPrint
         width = 0
       when :if_break
         queue = doc.break_contents + queue
-      when :text
-        width += doc.width
       end
     end
 
@@ -955,9 +930,6 @@ class PrettierPrint
         elsif mode == MODE_FLAT && doc.flat_contents.any?
           commands += doc.flat_contents.reverse.map { |part| [indent, mode, part] }
         end
-      when :text
-        doc.objects.each { |object| fit_buffer << object }
-        remaining -= doc.width
       end
     end
 
@@ -975,9 +947,7 @@ class PrettierPrint
   def remove_breaks_with(doc, replace)
     case doc.type
     when :breakable
-      text = Text.new
-      text.add(object: doc.force? ? replace : doc.separator, width: doc.width)
-      text
+      doc.force? ? replace : doc.separator
     when :if_break
       Align.new(0, doc.flat_contents)
     else
