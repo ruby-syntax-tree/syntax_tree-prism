@@ -601,7 +601,7 @@ class PrettierPrint
   # Adds a separated list.
   # The list is separated by comma with breakable space, by default.
   #
-  # #seplist iterates the +list+ using +iter_method+.
+  # #seplist iterates the +list+ using +each+.
   # It yields each object to the block given for #seplist.
   # The procedure +separator_proc+ is called between each yields.
   #
@@ -609,7 +609,6 @@ class PrettierPrint
   #
   # If +separator_proc+ is nil or not given,
   # +lambda { comma_breakable }+ is used.
-  # If +iter_method+ is not given, :each is used.
   #
   # For example, following 3 code fragments has similar effect.
   #
@@ -622,9 +621,9 @@ class PrettierPrint
   #   xxx 2
   #   q.comma_breakable
   #   xxx 3
-  def seplist(list, sep=nil, iter_method=:each) # :yield: element
+  def seplist(list, sep = nil) # :yield: element
     first = true
-    list.__send__(iter_method) {|*v|
+    list.each {|*v|
       if first
         first = false
       elsif sep
