@@ -70,6 +70,11 @@ class PrettierPrint
       @contents = contents
     end
 
+    def commands(indent, mode)
+      next_indent = indent + @indent
+      contents.reverse.map { |part| [next_indent, mode, part] }
+    end
+
     def type
       :align
     end
@@ -406,8 +411,7 @@ class PrettierPrint
         next_indent = indent + 2
         commands += doc.contents.reverse.map { |part| [next_indent, mode, part] }
       when :align
-        next_indent = indent + doc.indent
-        commands += doc.contents.reverse.map { |part| [next_indent, mode, part] }
+        commands.concat(doc.commands(indent, mode))
       when :trim
         position -= trim!(buffer)
       when :if_break
@@ -868,8 +872,7 @@ class PrettierPrint
         next_indent = indent + 2
         commands += doc.contents.reverse.map { |part| [next_indent, mode, part] }
       when :align
-        next_indent = indent + doc.indent
-        commands += doc.contents.reverse.map { |part| [next_indent, mode, part] }
+        commands.concat(doc.commands(indent, mode))
       when :trim
         remaining += trim!(fit_buffer)
       when :if_break
