@@ -69,6 +69,10 @@ class PrettierPrint
       @indent = indent
       @contents = contents
     end
+
+    def type
+      :align
+    end
   end
 
   # A node in the print tree that represents a place in the buffer that the
@@ -95,6 +99,10 @@ class PrettierPrint
     def indent?
       @indent
     end
+
+    def type
+      :breakable
+    end
   end
 
   # Below here are the most common combination of options that are created when
@@ -108,6 +116,9 @@ class PrettierPrint
   # the "break" mode as opposed to the "flat" mode. Useful for when you need to
   # force a newline into a group.
   class BreakParent
+    def type
+      :break_parent
+    end
   end
 
   # Since there's really no difference in these instances, just using the same
@@ -135,6 +146,10 @@ class PrettierPrint
     def break?
       @break
     end
+
+    def type
+      :group
+    end
   end
 
   # A node in the print tree that represents printing one thing if the
@@ -147,6 +162,10 @@ class PrettierPrint
       @break_contents = break_contents
       @flat_contents = flat_contents
     end
+
+    def type
+      :if_break
+    end
   end
 
   # A node in the print tree that is a variant of the Align node that indents
@@ -156,6 +175,10 @@ class PrettierPrint
 
     def initialize(contents: [])
       @contents = contents
+    end
+
+    def type
+      :indent
     end
   end
 
@@ -174,6 +197,10 @@ class PrettierPrint
       @priority = priority
       @contents = contents
     end
+
+    def type
+      :line_suffix
+    end
   end
 
   # A node in the print tree that represents plain content that cannot be broken
@@ -190,13 +217,28 @@ class PrettierPrint
       @objects << object
       @width += width
     end
+
+    def type
+      :text
+    end
   end
 
   # A node in the print tree that represents trimming all of the indentation of
   # the current line, in the rare case that you need to ignore the indentation
   # that you've already created. This node should be placed after a Breakable.
   class Trim
+    def type
+      :trim
+    end
   end
+
+  using Module.new {
+    refine String do
+      def type
+        :string
+      end
+    end
+  }
 
   # Since all of the instances here are the same, we can reuse the same one to
   # cut down on allocations.
@@ -387,11 +429,11 @@ class PrettierPrint
     # This is a linear stack instead of a mutually recursive call defined on
     # the individual doc nodes for efficiency.
     while (indent, mode, doc = commands.pop)
-      case doc
-      when String
+      case doc.type
+      when :string
         buffer << doc
         position += doc.length
-      when Group
+      when :group
         if mode == MODE_FLAT && !should_remeasure
           next_mode = doc.break? ? MODE_BREAK : MODE_FLAT
           commands += doc.contents.reverse.map { |part| [indent, next_mode, part] }
@@ -410,7 +452,7 @@ class PrettierPrint
             end
           end
         end
-      when Breakable
+      when :breakable
         if mode == MODE_FLAT
           if doc.force?
             # This line was forced into the output even if we were in flat mode,
@@ -448,25 +490,25 @@ class PrettierPrint
           buffer << " " * indent
           position = indent
         end
-      when Indent
+      when :indent
         next_indent = indent + 2
         commands += doc.contents.reverse.map { |part| [next_indent, mode, part] }
-      when Align
+      when :align
         next_indent = indent + doc.indent
         commands += doc.contents.reverse.map { |part| [next_indent, mode, part] }
-      when Trim
+      when :trim
         position -= buffer.trim!
-      when IfBreak
+      when :if_break
         if mode == MODE_BREAK && doc.break_contents.any?
           commands += doc.break_contents.reverse.map { |part| [indent, mode, part] }
         elsif mode == MODE_FLAT && doc.flat_contents.any?
           commands += doc.flat_contents.reverse.map { |part| [indent, mode, part] }
         end
-      when LineSuffix
+      when :line_suffix
         line_suffixes << [indent, mode, doc]
-      when BreakParent
+      when :break_parent
         # do nothing
-      when Text
+      when :text
         doc.objects.each { |object| buffer << object }
         position += doc.width
       else
@@ -563,16 +605,16 @@ class PrettierPrint
     width = 0
 
     while (doc = queue.shift)
-      case doc
-      when String
+      case doc.type
+      when :string
         width += doc.length
-      when Group, Indent, Align
+      when :group, :indent, :align
         queue = doc.contents + queue
-      when Breakable
+      when :breakable
         width = 0
-      when IfBreak
+      when :if_break
         queue = doc.break_contents + queue
-      when Text
+      when :text
         width += doc.width
       end
     end
@@ -587,11 +629,11 @@ class PrettierPrint
     queue = [node]
 
     while (doc = queue.shift)
-      case doc
-      when Align, Indent, Group
+      case doc.type
+      when :align, :indent, :group
         doc.contents.map! { |child| remove_breaks_with(child, replace) }
         queue += doc.contents
-      when IfBreak
+      when :if_break
         doc.flat_contents.map! { |child| remove_breaks_with(child, replace) }
         queue += doc.flat_contents
       end
@@ -884,14 +926,14 @@ class PrettierPrint
 
       indent, mode, doc = commands.pop
 
-      case doc
-      when String
+      case doc.type
+      when :string
         fit_buffer << doc
         remaining -= doc.length
-      when Group
+      when :group
         next_mode = doc.break? ? MODE_BREAK : mode
         commands += doc.contents.reverse.map { |part| [indent, next_mode, part] }
-      when Breakable
+      when :breakable
         if mode == MODE_FLAT && !doc.force?
           fit_buffer << doc.separator
           remaining -= doc.width
@@ -899,21 +941,21 @@ class PrettierPrint
         end
 
         return true
-      when Indent
+      when :indent
         next_indent = indent + 2
         commands += doc.contents.reverse.map { |part| [next_indent, mode, part] }
-      when Align
+      when :align
         next_indent = indent + doc.indent
         commands += doc.contents.reverse.map { |part| [next_indent, mode, part] }
-      when Trim
+      when :trim
         remaining += fit_buffer.trim!
-      when IfBreak
+      when :if_break
         if mode == MODE_BREAK && doc.break_contents.any?
           commands += doc.break_contents.reverse.map { |part| [indent, mode, part] }
         elsif mode == MODE_FLAT && doc.flat_contents.any?
           commands += doc.flat_contents.reverse.map { |part| [indent, mode, part] }
         end
-      when Text
+      when :text
         doc.objects.each { |object| fit_buffer << object }
         remaining -= doc.width
       end
@@ -931,12 +973,12 @@ class PrettierPrint
   end
 
   def remove_breaks_with(doc, replace)
-    case doc
-    when Breakable
+    case doc.type
+    when :breakable
       text = Text.new
       text.add(object: doc.force? ? replace : doc.separator, width: doc.width)
       text
-    when IfBreak
+    when :if_break
       Align.new(0, doc.flat_contents)
     else
       doc
