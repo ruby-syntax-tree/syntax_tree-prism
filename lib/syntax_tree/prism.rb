@@ -418,7 +418,7 @@ module Prism
           if_break { visit_block_node_break(node, break_opening, break_closing) }.if_flat do
             text(flat_opening)
 
-            if parameters
+            if parameters.is_a?(ParametersNode)
               text(" ")
               visit(parameters)
             end
@@ -440,7 +440,7 @@ module Prism
       text(break_opening)
       node.opening_loc.comments.each { |comment| visit_comment(comment) }
 
-      if parameters
+      if parameters.is_a?(ParametersNode)
         text(" ")
         visit(parameters)
       end
@@ -942,13 +942,13 @@ module Prism
     # ^^^^^^^^^^^^^^^
     def visit_call_operator_write_node(node)
       receiver = node.receiver
-      call_operator = node.call_operator
+      call_operator_loc = node.call_operator_loc
 
       visit_write(node.operator_loc, node.value) do
         group do
           if receiver
             visit(receiver)
-            visit_call_node_call_operator(call_operator)
+            visit_call_node_call_operator(call_operator_loc)
           end
 
           text(node.message)
@@ -1258,8 +1258,13 @@ module Prism
     def visit_defined_node(node)
       group do
         text("defined?")
-        visit_location(node.lparen_loc)
-        visit_body(node.value, node.rparen_loc.comments, false)
+        if (lparen_loc = node.lparen_loc)
+          visit_location(node.lparen_loc)
+        else
+          text("(")
+        end
+
+        visit_body(node.value, node.rparen_loc&.comments || [], false)
         breakable_empty
         text(")")
       end
@@ -1279,11 +1284,15 @@ module Prism
     def visit_embedded_statements_node(node)
       group do
         visit_location(node.opening_loc)
-        indent do
+
+        if (statements = node.statements)
+          indent do
+            breakable_empty
+            visit(statements)
+          end
           breakable_empty
-          visit(node.statements)
         end
-        breakable_empty
+
         text("}")
       end
     end
@@ -1746,7 +1755,7 @@ module Prism
         visit(node.receiver)
         visit_location(node.opening_loc)
 
-        if arguments.any?
+        if (arguments = (node.arguments&.arguments || [])).any?
           indent do
             breakable_empty
             seplist(arguments) { |argument| visit(argument) }
@@ -1989,7 +1998,7 @@ module Prism
 
       group do
         text("->")
-        visit(parameters) if parameters
+        visit(parameters) if parameters.is_a?(ParametersNode)
 
         if body || closing_comments.any?
           text(" ")
