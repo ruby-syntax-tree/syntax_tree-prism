@@ -24,26 +24,13 @@ module Prism
     # A node in the print tree that represents a place in the buffer that the
     # content can be broken onto multiple lines.
     class Breakable
-      attr_reader :separator, :width
+      attr_reader :separator, :width, :force, :indent
 
-      def initialize(
-        separator = " ",
-        width = separator.length,
-        force = false,
-        indent = true
-      )
+      def initialize(separator, width, force, indent)
         @separator = separator
         @width = width
         @force = force
         @indent = indent
-      end
-
-      def force?
-        @force
-      end
-
-      def indent?
-        @indent
       end
 
       def type
@@ -79,19 +66,15 @@ module Prism
     # outermost group first and try again. It will continue breaking groups until
     # everything fits (or there are no more groups to break).
     class Group
-      attr_reader :contents
+      attr_reader :contents, :break
 
-      def initialize(contents = [])
+      def initialize(contents)
         @contents = contents
         @break = false
       end
 
-      def break
+      def break!
         @break = true
-      end
-
-      def break?
-        @break
       end
 
       def type
@@ -242,7 +225,7 @@ module Prism
       group do
         text("alias ")
         visit(node.new_name)
-        nest(6) do
+        align(6) do
           breakable_space
           visit(node.old_name)
         end
@@ -265,7 +248,7 @@ module Prism
           visit(new_name)
         end
 
-        nest(6) do
+        align(6) do
           breakable_space
           if old_name.is_a?(SymbolNode)
             text(old_name.value)
@@ -515,21 +498,21 @@ module Prism
           visit(statements) unless statements.nil?
 
           unless rescue_clause.nil?
-            nest(-2) do
+            align(-2) do
               breakable_force
               visit(rescue_clause)
             end
           end
 
           unless else_clause.nil?
-            nest(-2) do
+            align(-2) do
               breakable_force
               visit(else_clause)
             end
           end
 
           unless ensure_clause.nil?
-            nest(-2) do
+            align(-2) do
               breakable_force
               visit(ensure_clause)
             end
@@ -675,7 +658,7 @@ module Prism
         visit_location(node.operator_loc)
 
         if name
-          nest(1) do
+          align(1) do
             breakable_empty
             text(name.name)
           end
@@ -936,7 +919,7 @@ module Prism
             *rest, last = chain
 
             doc =
-              nest(0) do
+              align(0) do
                 visit(rest.shift) unless rest.first.is_a?(CallNode)
 
                 rest.each do |node|
@@ -1149,7 +1132,7 @@ module Prism
         end
       end
 
-      nest(position > (maxwidth / 2) ? 0 : position) do
+      align(position > (maxwidth / 2) ? 0 : position) do
         seplist(arguments) { |argument| visit(argument) }
       end
     end
@@ -1208,7 +1191,7 @@ module Prism
 
           if predicate
             text(" ")
-            nest(5) { visit(predicate) }
+            align(5) { visit(predicate) }
           end
         end
 
@@ -1755,7 +1738,7 @@ module Prism
         group do
           visit_location(if_keyword_loc)
           text(" ")
-          nest(6) { visit(node.predicate) }
+          align(6) { visit(node.predicate) }
 
           if consequent
             visit_body(statements, [], true)
@@ -1848,7 +1831,7 @@ module Prism
     private def visit_ternary_node_break(node, truthy, falsy)
       group do
         text("if ")
-        nest(3) { visit(node.predicate) }
+        align(3) { visit(node.predicate) }
       end
 
       indent do
@@ -1876,7 +1859,7 @@ module Prism
       group do
         visit_location(node.if_keyword_loc)
         text(" ")
-        nest(3) { visit(node.predicate) }
+        align(3) { visit(node.predicate) }
       end
 
       if consequent
@@ -1922,7 +1905,7 @@ module Prism
 
       group do
         text("in ")
-        nest(3) { visit(node.pattern) }
+        align(3) { visit(node.pattern) }
 
         if statements
           indent do
@@ -2451,7 +2434,7 @@ module Prism
     def visit_no_keywords_parameter_node(node)
       group do
         visit_location(node.operator_loc)
-        nest(2) do
+        align(2) do
           breakable_empty
           text("nil")
         end
@@ -2507,7 +2490,7 @@ module Prism
       parameters = node.compact_child_nodes
       implicit_rest = parameters.pop if parameters.last.is_a?(ImplicitRestNode)
 
-      nest(0) do
+      align(0) do
         seplist(parameters) { |parameter| visit(parameter) }
         visit(implicit_rest) if implicit_rest
       end
@@ -2692,7 +2675,7 @@ module Prism
 
           if exceptions.any?
             text(" ")
-            nest(7) { seplist(exceptions) { |exception| visit(exception) } }
+            align(7) { seplist(exceptions) { |exception| visit(exception) } }
           elsif reference.nil?
             text(" StandardError")
           end
@@ -2738,7 +2721,7 @@ module Prism
       if name
         group do
           visit_location(node.operator_loc)
-          nest(1) do
+          align(1) do
             breakable_empty
             text(node.name.name)
           end
@@ -2831,7 +2814,7 @@ module Prism
           text("*")
           operator_loc.comments.each { |comment| visit_comment(comment) }
 
-          nest(1) do
+          align(1) do
             breakable_empty
             visit(expression)
           end
@@ -2920,7 +2903,7 @@ module Prism
           text(")")
         elsif arguments.any?
           text(" ")
-          nest(6) { seplist(arguments) { |argument| visit(argument) } }
+          align(6) { seplist(arguments) { |argument| visit(argument) } }
         end
 
         if block
@@ -2947,7 +2930,7 @@ module Prism
     def visit_undef_node(node)
       group do
         text("undef ")
-        nest(6) do
+        align(6) do
           seplist(node.names) do |name|
             if name.is_a?(SymbolNode)
               text(name.value)
@@ -3002,7 +2985,7 @@ module Prism
       group do
         visit_location(node.keyword_loc)
         text(" ")
-        nest(3) { visit(node.predicate) }
+        align(3) { visit(node.predicate) }
       end
 
       if consequent
@@ -3058,7 +3041,7 @@ module Prism
     private def visit_until_node_break(node)
       visit_location(node.keyword_loc)
       text(" ")
-      nest(6) { visit(node.predicate) }
+      align(6) { visit(node.predicate) }
       visit_body(node.statements, node.closing_loc&.comments || [], false)
       breakable_space
       text("end")
@@ -3082,7 +3065,7 @@ module Prism
       group do
         group do
           text("when ")
-          nest(5) do
+          align(5) do
             seplist(conditions, -> { group { comma_breakable } }) do |condition|
               visit(condition)
             end
@@ -3147,7 +3130,7 @@ module Prism
     private def visit_while_node_break(node)
       visit_location(node.keyword_loc)
       text(" ")
-      nest(6) { visit(node.predicate) }
+      align(6) { visit(node.predicate) }
       visit_body(node.statements, node.closing_loc&.comments || [], false)
       breakable_space
       text("end")
@@ -3665,7 +3648,7 @@ module Prism
       if value
         group do
           visit_location(operator_loc)
-          nest(operator_loc.length) do
+          align(operator_loc.length) do
             breakable_empty
             visit(value)
           end
@@ -3854,12 +3837,12 @@ module Prism
           position += doc.length
         when :group
           if mode == MODE_FLAT && !should_remeasure
-            next_mode = doc.break? ? MODE_BREAK : MODE_FLAT
+            next_mode = doc.break ? MODE_BREAK : MODE_FLAT
             commands += doc.contents.reverse.map { |part| [indent, next_mode, part] }
           else
             should_remeasure = false
 
-            if doc.break?
+            if doc.break
               commands += doc.contents.reverse.map { |part| [indent, MODE_BREAK, part] }
             else
               next_commands = doc.contents.reverse.map { |part| [indent, MODE_FLAT, part] }
@@ -3873,7 +3856,7 @@ module Prism
           end
         when :breakable
           if mode == MODE_FLAT
-            if doc.force?
+            if doc.force
               # This line was forced into the output even if we were in flat mode,
               # so we need to tell the next group that no matter what, it needs to
               # remeasure because the previous measurement didn't accurately
@@ -3900,7 +3883,7 @@ module Prism
             next
           end
 
-          if !doc.indent?
+          if !doc.indent
             buffer << "\n"
             position = 0
           else
@@ -3983,10 +3966,10 @@ module Prism
           fit_buffer << doc
           remaining -= doc.length
         when :group
-          next_mode = doc.break? ? MODE_BREAK : mode
+          next_mode = doc.break ? MODE_BREAK : mode
           commands += doc.contents.reverse.map { |part| [indent, next_mode, part] }
         when :breakable
-          if mode == MODE_FLAT && !doc.force?
+          if mode == MODE_FLAT && !doc.force
             fit_buffer << doc.separator
             remaining -= doc.width
             next
@@ -4082,7 +4065,7 @@ module Prism
     def remove_breaks_with(doc, replace)
       case doc.type
       when :breakable
-        doc.force? ? replace : doc.separator
+        doc.force ? replace : doc.separator
       when :if_break
         Align.new(0, doc.flat_contents)
       else
@@ -4194,8 +4177,8 @@ module Prism
       target << doc
 
       groups.reverse_each do |group|
-        break if group.break?
-        group.break
+        break if group.break
+        group.break!
       end
     end
 
@@ -4220,11 +4203,22 @@ module Prism
     # Container node builders
     # --------------------------------------------------------------------------
 
+    # Increases left margin after newline with +indent+ for line breaks added in
+    # the block.
+    def align(indent)
+      contents = []
+      doc = Align.new(indent, contents)
+      target << doc
+
+      with_target(contents) { yield }
+      doc
+    end
+
     # Groups line break hints added in the block. The line break hints are all
     # to be used or not.
     #
     # If +indent+ is specified, the method call is regarded as nested by
-    # nest(indent) { ... }.
+    # align(indent) { ... }.
     #
     # If +open_object+ is specified, <tt>text(open_object, open_width)</tt> is
     # called before grouping. If +close_object+ is specified,
@@ -4274,7 +4268,7 @@ module Prism
         group = Group.new(contents)
 
         q.with_target(contents) { yield }
-        q.break_parent if group.break?
+        q.break_parent if group.break
       end
     end
 
@@ -4296,7 +4290,7 @@ module Prism
 
       with_target(break_contents) { yield }
 
-      if groups.last.break?
+      if groups.last.break
         IfFlatIgnore.new(self)
       else
         IfBreakBuilder.new(self, flat_contents)
@@ -4307,12 +4301,12 @@ module Prism
     # the print tree, however it's starting from the flat contents, and cannot
     # be used to build the break contents.
     def if_flat
-      if groups.last.break?
+      if groups.last.break
         contents = []
         group = Group.new(contents)
 
         with_target(contents) { yield }
-        break_parent if group.break?
+        break_parent if group.break
       else
         flat_contents = []
         doc = IfBreak.new(break_contents, flat_contents)
@@ -4340,17 +4334,6 @@ module Prism
     def line_suffix(priority)
       contents = []
       doc = LineSuffix.new(priority, contents)
-      target << doc
-
-      with_target(contents) { yield }
-      doc
-    end
-
-    # Increases left margin after newline with +indent+ for line breaks added in
-    # the block.
-    def nest(indent)
-      contents = []
-      doc = Align.new(indent, contents)
       target << doc
 
       with_target(contents) { yield }
