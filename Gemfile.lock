@@ -8,8 +8,14 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
+    optparse (0.5.0)
     prettier_print (1.2.1)
     prism (0.30.0)
+    profile-viewer (0.0.2)
+      optparse
+      webrick
+    vernier (1.0.1)
+    webrick (1.8.1)
 
 PLATFORMS
   arm64-darwin-22
@@ -17,7 +23,9 @@ PLATFORMS
 
 DEPENDENCIES
   prism
+  profile-viewer
   syntax_tree-prism!
+  vernier
 
 BUNDLED WITH
    2.4.13
